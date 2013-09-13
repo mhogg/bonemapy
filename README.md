@@ -1,6 +1,6 @@
 #bonemapy
 
-**An ABAQUS plug-in to map bone properties from CT scans to 3D finite element bone/implant models. This is typically used for applying non homogenous material properties to the bone model**
+**An ABAQUS plug-in to map bone properties from CT scans to 3D finite element bone/implant models. This is typically used for applying heterogeneous material properties to the bone model**
 
 Copyright 2013, Michael Hogg (michael.christopher.hogg@gmail.com)
 
