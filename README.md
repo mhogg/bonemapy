@@ -11,7 +11,7 @@ MIT license - See LICENSE.txt for details on usage and distribution
 ### Software requirements
 
 * ABAQUS  >= 6.11
-* pydicom >  0.9.7
+* pydicom >= 0.9.7
 
 **NOTES:**
 
