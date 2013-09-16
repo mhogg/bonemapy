@@ -26,7 +26,7 @@ class elementC3D10():
         self.N[7] = 4.0*(1.0-g-h-r)*r
         self.N[8] = 4.0*g*r
         self.N[9] = 4.0*h*r
-    def interpFunc(self,nv):
+    def interpFunc(self,nv):       
         return np.dot(self.N,nv)
         
 class elementC3D4():
@@ -38,9 +38,8 @@ class elementC3D4():
         self.N          = np.array(self.numNodes)
         self.setIpcs()
     def setIpcs(self):
-        alpha = 0.33333 # CHECK THESE VALUES
-        beta  = 0.33333 # CHECK THESE VALUES
-        self.ipcs = np.array([[],[],[]])
+        g = h = r = 0.25
+        self.ipcs = np.array([g,h,r])
     def shapeFuncMatrix(self,ipc):
         g,h,r=ipc
         self.N[0] = (1.0-g-h-r)
