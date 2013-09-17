@@ -109,3 +109,22 @@ class elementC3D10M(elementC3D10):
                               [beta, alpha,alpha],
                               [alpha,beta, alpha],
                               [alpha,alpha,beta ]])
+                                                         
+class triLinearInterp():
+    def __init__(self):
+        self.N = np.zeros(8,dtype=float)
+    def evalN(self,ipc):
+        g,h,r=ipc
+        self.N[0] = (1-g)*(1-h)*(1-r)
+        self.N[1] = (1+g)*(1-h)*(1-r)
+        self.N[2] = (1+g)*(1+h)*(1-r)
+        self.N[3] = (1-g)*(1+h)*(1-r)
+        self.N[4] = (1-g)*(1-h)*(1+r)
+        self.N[5] = (1+g)*(1-h)*(1+r)
+        self.N[6] = (1+g)*(1+h)*(1+r)
+        self.N[7] = (1-g)*(1+h)*(1+r)
+        self.N /= 8.0
+    def interp(self,nv,ipc):
+        self.evalN(ipc)
+        return np.dot(nv,self.N)
+        
