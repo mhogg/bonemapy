@@ -110,11 +110,18 @@ class elementC3D10M(elementC3D10):
                               [alpha,beta, alpha],
                               [alpha,alpha,beta ]])
                                                          
-class triLinearInterp():
-    def __init__(self):
-        self.N = np.zeros(8,dtype=float)
-    def evalN(self,ipc):
-        g,h,r=ipc
+class triLinearInterpIso():
+    
+    def __init__(self,x,y,z,fxyz):
+        self.x  = x
+        self.y  = y
+        self.z  = z
+        self.f  = fxyz
+        self.N  = np.zeros(8,dtype=float)
+        self.nv = np.zeros(8,dtype=float)
+        self.ni = np.array([0,1,3,2,4,5,7,6],dtype=int)
+        
+    def evalN(self,g,h,r):
         self.N[0] = (1-g)*(1-h)*(1-r)
         self.N[1] = (1+g)*(1-h)*(1-r)
         self.N[2] = (1+g)*(1+h)*(1-r)
@@ -123,8 +130,65 @@ class triLinearInterp():
         self.N[5] = (1+g)*(1-h)*(1+r)
         self.N[6] = (1+g)*(1+h)*(1+r)
         self.N[7] = (1-g)*(1+h)*(1+r)
-        self.N /= 8.0
-    def interp(self,nv,ipc):
-        self.evalN(ipc)
-        return np.dot(nv,self.N)
+        self.N /= 8.0    
         
+    def findPointData(self,x,xc):
+        xupp = x.searchsorted(xc)
+        xlow = xupp-1
+        dx   = 0.5*(x[xupp] - x[xlow])
+        xmid = x[xlow] + dx
+        xiso = (xc-xmid)/dx 
+        return xlow,xupp,xiso                   
+        
+    def interp(self,xc,yc,zc):
+        xl,xh,g = self.findPointData(self.x,xc)
+        yl,yh,h = self.findPointData(self.y,yc)
+        zl,zh,r = self.findPointData(self.z,zc)
+        xh+=1; yh+=1; zh+=1
+        self.nv[:] = self.f[xl:xh,yl:yh,zl:zh].flatten()[self.ni]    
+        self.evalN(g,h,r)
+        return np.dot(self.N,self.nv)
+        
+    def __call__(self,xc,yc,zc):
+        return self.interp(xc,yc,zc)
+        
+class triLinearInterp():
+    
+    def __init__(self,x,y,z,f):
+        self.x  = x
+        self.y  = y
+        self.z  = z
+        self.f  = f
+        self.N  = np.zeros(8,dtype=float)
+        self.nv = np.zeros(8,dtype=float)
+        
+    def evalN(self,t,u,v):
+        self.N[0] = (1.0-t)*(1.0-u)*(1.0-v)
+        self.N[1] = t*(1.0-u)*(1.0-v)
+        self.N[2] = (1.0-t)*u*(1.0-v)
+        self.N[3] = t*u*(1.0-v)
+        self.N[4] = (1.0-t)*(1.0-u)*v
+        self.N[5] = t*(1.0-u)*v
+        self.N[6] = (1.0-t)*u*v
+        self.N[7] = t*u*v 
+        
+    def findPointData(self,x,xc):
+        xh = x.searchsorted(xc)
+        xl = xh-1               
+        xiso = (xc-x[xl])/(x[xh]-x[xl])
+        return xl,xh,xiso                   
+        
+    def interp(self,xc,yc,zc):
+        xl,xh,t = self.findPointData(self.x,xc)
+        yl,yh,u = self.findPointData(self.y,yc)
+        zl,zh,v = self.findPointData(self.z,zc)
+        self.nv[:] = self.f[xl:xh+1,yl:yh+1,zl:zh+1].flatten()   
+        self.evalN(t,u,v)
+        return np.dot(self.N,self.nv)
+        
+    def __call__(self,xc,yc,zc):
+        return self.interp(xc,yc,zc)
+
+# Supported element types
+seTypes = {'C3D4':elementC3D4, 'C3D10':elementC3D10, 'C3D10M':elementC3D10M}     
+
