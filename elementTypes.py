@@ -1,5 +1,13 @@
+# -*- coding: utf-8 -*-
+
+# Copyright (C) 2013 Michael Hogg
+
+# This file is part of bonemapy - See LICENSE.txt for information on usage and redistribution
 
 import numpy as np
+from abaqusConstants import C3D4, C3D10, C3D10M 
+
+# ~~~~~~~~~~ 
 
 class elementC3D4():
     
@@ -7,11 +15,14 @@ class elementC3D4():
         self.name       = 'C3D4'
         self.desc       = 'Linear tetrahedral element'
         self.numNodes   = 4
-        self.numIntPnts = 1
-        self.Nips       = None        
+        self.numIntPnts = 1     
+        self.setIpnums()
         self.setIpcs()
         self.evalNips()
         
+    def setIpnums(self):
+        self.ipnums = np.array([i+1 for i in range(self.numIntPnts)]) 
+    
     def setIpcs(self):
         g = h = r = 0.25
         self.ipcs = np.array([[g,h,r]])
@@ -38,7 +49,9 @@ class elementC3D4():
         self.nc = np.array([[ 0.0, 0.0, 0.0],
                             [ 1.0, 0.0, 0.0],
                             [ 0.0, 1.0, 0.0],
-                            [ 0.0, 0.0, 1.0]])        
+                            [ 0.0, 0.0, 1.0]]) 
+                            
+# ~~~~~~~~~~        
         
 class elementC3D10():
 
@@ -47,9 +60,12 @@ class elementC3D10():
         self.desc       = 'Quadratic tetrahedral element'
         self.numNodes   = 10
         self.numIntPnts = 4
-        self.Nips       = None
+        self.setIpnums()        
         self.setIpcs()
         self.evalNips()
+        
+    def setIpnums(self):
+        self.ipnums = np.array([i+1 for i in range(self.numIntPnts)])         
         
     def setIpcs(self):
         alpha     = 0.1381966
@@ -94,6 +110,8 @@ class elementC3D10():
                             [ 0.0, 0.0, 0.5],
                             [ 0.5, 0.0, 0.5],
                             [ 0.0, 0.5, 0.5]])
+                            
+# ~~~~~~~~~~                             
 
 class elementC3D10M(elementC3D10):
     
@@ -109,50 +127,12 @@ class elementC3D10M(elementC3D10):
                               [beta, alpha,alpha],
                               [alpha,beta, alpha],
                               [alpha,alpha,beta ]])
-                                                         
-class triLinearInterpIso():
-    
-    def __init__(self,x,y,z,fxyz):
-        self.x  = x
-        self.y  = y
-        self.z  = z
-        self.f  = fxyz
-        self.N  = np.zeros(8,dtype=float)
-        self.nv = np.zeros(8,dtype=float)
-        self.ni = np.array([0,1,3,2,4,5,7,6],dtype=int)
-        
-    def evalN(self,g,h,r):
-        self.N[0] = (1-g)*(1-h)*(1-r)
-        self.N[1] = (1+g)*(1-h)*(1-r)
-        self.N[2] = (1+g)*(1+h)*(1-r)
-        self.N[3] = (1-g)*(1+h)*(1-r)
-        self.N[4] = (1-g)*(1-h)*(1+r)
-        self.N[5] = (1+g)*(1-h)*(1+r)
-        self.N[6] = (1+g)*(1+h)*(1+r)
-        self.N[7] = (1-g)*(1+h)*(1+r)
-        self.N /= 8.0    
-        
-    def findPointData(self,x,xc):
-        xupp = x.searchsorted(xc)
-        xlow = xupp-1
-        dx   = 0.5*(x[xupp] - x[xlow])
-        xmid = x[xlow] + dx
-        xiso = (xc-xmid)/dx 
-        return xlow,xupp,xiso                   
-        
-    def interp(self,xc,yc,zc):
-        xl,xh,g = self.findPointData(self.x,xc)
-        yl,yh,h = self.findPointData(self.y,yc)
-        zl,zh,r = self.findPointData(self.z,zc)
-        xh+=1; yh+=1; zh+=1
-        self.nv[:] = self.f[xl:xh,yl:yh,zl:zh].flatten()[self.ni]    
-        self.evalN(g,h,r)
-        return np.dot(self.N,self.nv)
-        
-    def __call__(self,xc,yc,zc):
-        return self.interp(xc,yc,zc)
+       
+# ~~~~~~~~~~         
         
 class triLinearInterp():
+    
+    """ Class for trilinear interpolation"""
     
     def __init__(self,x,y,z,f):
         self.x  = x
@@ -188,7 +168,9 @@ class triLinearInterp():
         
     def __call__(self,xc,yc,zc):
         return self.interp(xc,yc,zc)
+        
+# ~~~~~~~~~~         
 
 # Supported element types
-seTypes = {'C3D4':elementC3D4, 'C3D10':elementC3D10, 'C3D10M':elementC3D10M}     
+seTypes = {C3D4:elementC3D4, C3D10:elementC3D10, C3D10M:elementC3D10M}     
 
