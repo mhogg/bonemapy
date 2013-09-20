@@ -21,5 +21,11 @@ MIT license - See LICENSE.txt for details on usage and distribution
 
 ### Model setup requirements
 
+* The model must be open in the current viewport
 * The model must contain only quadrilateral tetrahedral elements (ABAQUS element C3D10). Linear tetrahedral elements (type C3D4) are currently unsupported.
 * Requires that the model coordinates match the CT scan coordinates e.g. the bone model cannot be shifted from its original position
+
+### CT stack requirements ###
+
+* All CT slices should be located in the same directory. This directory must not contain any other file types or slices belonging to other stacks.  
+* It is assumed that all slices have the same origin (i.e. same x,y coordinate)
