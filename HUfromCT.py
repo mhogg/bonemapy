@@ -7,7 +7,7 @@
 from abaqus import *
 from abaqusConstants import *
 from odbAccess import *
-import os, numpy, dicom
+import os, numpy, dicom, copy
 import elementTypes as et
 
 # ~~~~~~~~~~ 
@@ -67,29 +67,22 @@ def getModelData():
     if elements==None: return None
     else:              numElems = len(elements)
 
-    # Get element information: (1) instance names, (2) element types and (3) number of each element type 
-    instNames={}
+    # Get part information: (1) instance names, (2) element types and (3) number of each element type 
+    partInfo={}
     for e in elements: 
-        if not instNames.has_key(e.instanceName): instNames[e.instanceName]={}
-        if not instNames[e.instanceName].has_key(e.type): instNames[e.instanceName][e.type]=0
-        instNames[e.instanceName][e.type]+=1 
-        
-    # Get element data
-    ec = dict([(ename,eclass()) for ename,eclass in et.seTypes.items()])
-    elemData = instNames.copy()
-    for instName in elemData.keys():
-        for k,v in elemData[instName].items():
-            elemData[instName][k] = np.zeros(v,dtype=[('label','|i4'),('econn','|i4',(ec[k].numNodes,))])
-        
+        if not partInfo.has_key(e.instanceName): partInfo[e.instanceName]={}
+        if not partInfo[e.instanceName].has_key(e.type): partInfo[e.instanceName][e.type]=0
+        partInfo[e.instanceName][e.type]+=1 
+               
     # Get total number of integration points
-    numIntPnts = 0
-    for instName in instNames.keys():
-        for etype,ecount in instNames[instName].keys():
-            numIntPnts += ec[etype].numIntPoints * ecount 
+    numIntPts = 0
+    for instName in partInfo.keys():
+        for etype,ecount in partInfo[instName].keys():
+            numIntPts += ec[etype].numIntPoints * ecount 
     
     # Get node data
     nodeData={}
-    for instName in instNames.keys():
+    for instName in partInfo.keys():
         instNodes = m.rootAssembly.instances[instName].nodes
         numNodes  = len(instNodes)
         nodeData[instName] = numpy.zeros(numNodes,dtype=[('label','|i4'),('coords','|f4',(3,))])
@@ -97,9 +90,20 @@ def getModelData():
             node = instNodes[n]
             nodeData[instName][n] = (node.label,node.coordinates)
 
-    # Calculate integration point coordinates from nodal coordinates using element interpolation function
+    # Create empty dictionary,array to store element data 
+    ec = dict([(ename,eclass()) for ename,eclass in et.seTypes.items()])
+    elemData = copy.deepcopy(partInfo)
+    for instName in elemData.keys():
+        for k,v in elemData[instName].items():
+            elemData[instName][k] = np.zeros(v,dtype=[('label','|i4'),('econn','|i4',(ec[k].numNodes,))])
+    eCount = dict([(k1,dict([k2,0] for k2 in partInfo[k1].keys())) for k1 in partInfo.keys()]) 
+
+    # Create empty array to store int pnt data
     ipData = np.zeros(numIntPts,dtype=[('iname','|a80'),('label','|i4'),('ipnum','|i4'),('coord','|f4',(3,)),('HUval','|f4')])   
-    ilow   = 0
+
+    # Calculate integration point coordinates from nodal coordinates using element 
+    # interpolation function. Also get element data
+    ilow = 0    
     for e in xrange(numElems):
 
         # Get element data
@@ -237,6 +241,7 @@ def createPartInstanceInOdb(odb,instName,instNodes,instElems):
         for e in xrange(edata.size):
             connect = edata[e]['econn']
             instElems[etype][e]['econn'] = instNodes[connect]['label']
+            for i in connect: nodeIndices[i]=1
              
     # Get the node labels and node coordinates
     nodeIndices = numpy.array(nodeIndices.keys(),dtype=int)
