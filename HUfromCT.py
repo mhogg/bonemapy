@@ -230,31 +230,30 @@ def createPartInstanceInOdb(odb,instName,instNodes,instElems):
     # Create part in odb
     part = odb.Part(name=instName,embeddedSpace=THREE_D, type=DEFORMABLE_BODY)
 
-    # Get all the nodes connected to the elements. Also convert the connectivity from node indices to labels
-    nodeIndices={}; numElems=len(instElems)
-    for e in xrange(numElems):
-        connect = instElems[e]['connect'] 
-        for i in xrange(len(connect)):
-            nIndex = connect[i]
-            nodeIndices[nIndex] = 1
-            instElems[e]['connect'][i] = instNodes[nIndex]['label']
-    
+    # Get all the nodes connected to the elements (not all elements in the instance). 
+    # Also convert the connectivity from node indices to labels   
+    nodeIndices={};
+    for etype,edata in instElems.items():
+        for e in xrange(edata.size):
+            connect = edata[e]['econn']
+            instElems[etype][e]['econn'] = instNodes[connect]['label']
+             
     # Get the node labels and node coordinates
     nodeIndices = numpy.array(nodeIndices.keys(),dtype=int)
-    numNodes = nodeIndices.size
-    nodeData = numpy.zeros(numNodes,dtype=[('label','|i4'),('coords','|f4',(3,))])
-    for i in xrange(numNodes):
-        nIndex = nodeIndices[i]
-        nodeData[i] = instNodes[nIndex]
-    nodeData.sort()
-
-    # Add the nodes and elements to the part
-    nl = numpy.ascontiguousarray(nodeData['label'])
-    nc = numpy.ascontiguousarray(nodeData['coords'])
-    el = numpy.ascontiguousarray(instElems['label'])
-    ec = numpy.ascontiguousarray(instElems['connect'])
-    part.addNodes(labels=nl,coordinates=nc)
-    part.addElements(labels=el,connectivity=ec,type='C3D10M')
+    nlabels = instNodes[nodeIndices]['label']
+    ncoords = instNodes[nodeIndices]['coords']
+    indx    = np.argsort(nlabels)
+    nlabels = nlabels[indx]
+    ncoords = ncoords[indx]
+    
+    # Add the nodes to the part
+    part.addNodes(labels=nlabels,coordinates=ncoords)
+    
+    # Add the elements to the part
+    for etype,edata in instElems.items():
+        el = numpy.ascontiguousarray(edata['label'])
+        ec = numpy.ascontiguousarray(edata['econn'])
+        part.addElements(labels=el,connectivity=ec,type=str(etype))
 
     # Create part instance
     odb.rootAssembly.Instance(name=instName,object=part)
@@ -264,7 +263,7 @@ def createPartInstanceInOdb(odb,instName,instNodes,instElems):
 
 # ~~~~~~~~~~
 
-def writeOdb(nodeData,elements,ipData,outfilename):
+def writeOdb(nodeData,elemData,ipData,outfilename):
 
     # Creates an odb from the specified assembly set / part instance. Then
     # creates a frame and a fieldoutput corresponding to the mapped HU values
@@ -279,7 +278,7 @@ def writeOdb(nodeData,elements,ipData,outfilename):
 
     # Copy all the elements and associated nodes to the odb
     for instName in elemData.keys(): 
-        createPartInstanceInOdb(odb,instName,nodeData[instName],elements)
+        createPartInstanceInOdb(odb,instName,nodeData[instName],elemData[instName])
 
     # Create fieldOutput to visualise mapped HU values
     fo = frame.FieldOutput(name='HU',description='Mapped HU values',type=SCALAR)
@@ -303,10 +302,10 @@ def writeOdb(nodeData,elements,ipData,outfilename):
 
 def getHU(instORset, instORsetName, CTsliceDir, outfilename, resetCTOrigin, writeOdbOutput):
     """
-    For the specified assembly set or part instance, gets the integration point
-    coordinates for all the elements and maps the HU values from the corresponding
-    CT stack to these points. Returns a text file that can be used in a subsequent
-    finite element analysis that uses ABAQUS subroutine USDFLD to apply bone properties.
+    For the specified assembly set or part instance, gets the integration point coordinates
+    for all the elements and maps the HU values from the corresponding CT stack to these
+    points. Returns a text file that can be used in a subsequent finite element analysis that
+    uses ABAQUS subroutine USDFLD to apply bone properties.
 
     Also creates an odb file with a fieldoutput showing the mapped HU values for checking.
     """ 
@@ -316,7 +315,7 @@ def getHU(instORset, instORsetName, CTsliceDir, outfilename, resetCTOrigin, writ
         print 'Error in getModelData. Exiting'
         return
     else:
-        nodeData,elements,ipData = result
+        nodeData,elemData,ipData = result
 
     result = getHUfromCT(CTsliceDir,outfilename,resetCTOrigin,ipData)
     if result is None:
@@ -325,7 +324,7 @@ def getHU(instORset, instORsetName, CTsliceDir, outfilename, resetCTOrigin, writ
 
     # Write odb file to check HU values have been calculated correctly
     if writeOdbOutput:
-        writeOdb(nodeData,elements,ipData,outfilename)
+        writeOdb(nodeData,elemData,ipData,outfilename)
     
     print '\nFinished\n'
     return
