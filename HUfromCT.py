@@ -22,22 +22,18 @@ def getElements(m,instORset,instORsetName):
     elif instORset=='Assembly set':
         elements = m.rootAssembly.allSets[instORsetName].elements
     
-    # Check that all elements are supported
-    if not checkElementTypes(elements,instORset,instORsetName): return None
-    
-    return elements
-    
-# ~~~~~~~~~~
-
-def checkElementTypes(eTypes,instORset,instORsetName):
-    
-    """Check element type. Only supported elements are allowed""" 
-
-    # Get element types
-    eTypes = {}
-    for e in elements:
-        eTypes[e.type]=1
-    eTypes = [str(eType) for eType in eTypes.keys()]       
+    # Get part information: (1) instance names, (2) element types and (3) number of each element type 
+    partInfo={}
+    for e in elements: 
+        if not partInfo.has_key(e.instanceName): partInfo[e.instanceName]={}
+        if not partInfo[e.instanceName].has_key(e.type): partInfo[e.instanceName][e.type]=0
+        partInfo[e.instanceName][e.type]+=1  
+        
+    # Put all element types in a list
+    eTypes = []
+    for k1 in partInfo.keys():
+        for k2 in partInfo[k1].keys(): et.append(k2)
+    eTypes = dict.fromkeys(eTypes,1).keys()
         
     # Check that elements are supported
     usTypes=[]
@@ -46,13 +42,13 @@ def checkElementTypes(eTypes,instORset,instORsetName):
             usTypes.append(eType)
     if len(usTypes)>0:
         print 'Element types %s in %s %s are not supported' % (', '.join(usTypes),instORset,instORsetName)   
-        return False
-           
-    return True
+        return None
     
+    return partInfo, elements
+       
 # ~~~~~~~~~~      
 
-def getModelData():
+def getModelData(instORset,instORsetName):
 
     """Get the integration point data from the supplied node and elements"""
 
@@ -62,17 +58,12 @@ def getModelData():
     mName = displayed.modelName
     m = mdb.models[mName]
     
-    # Get elements
-    elements = getElements(m)
-    if elements==None: return None
-    else:              numElems = len(elements)
-
-    # Get part information: (1) instance names, (2) element types and (3) number of each element type 
-    partInfo={}
-    for e in elements: 
-        if not partInfo.has_key(e.instanceName): partInfo[e.instanceName]={}
-        if not partInfo[e.instanceName].has_key(e.type): partInfo[e.instanceName][e.type]=0
-        partInfo[e.instanceName][e.type]+=1 
+    # Get elements and part info
+    result = getElements(m,instORset,instORsetName)
+    if result==None: return None
+    else:
+        elements,partInfo = result
+        numElems = len(elements)
                
     # Get total number of integration points
     numIntPts = 0
@@ -315,7 +306,7 @@ def getHU(instORset, instORsetName, CTsliceDir, outfilename, resetCTOrigin, writ
     Also creates an odb file with a fieldoutput showing the mapped HU values for checking.
     """ 
 
-    result = getModelData()
+    result = getModelData(instORset,instORsetName)
     if result is None:
         print 'Error in getModelData. Exiting'
         return
