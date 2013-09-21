@@ -93,9 +93,6 @@ def getModelData(instORset,instORsetName):
     # Create empty array to store int pnt data
     ipData = np.zeros(numIntPts,dtype=[('iname','|a80'),('label','|i4'),('ipnum','|i4'),('coord','|f4',(3,)),('HUval','|f4')])   
 
-    et.ipData = ipData
-    et.ec = ec
-
     # Calculate integration point coordinates from nodal coordinates using element 
     # interpolation function. Also get element data
     ilow = 0    
@@ -125,7 +122,7 @@ def getModelData(instORset,instORsetName):
         eIndex = eCount[eInstName][eType]
         elemData[eInstName][eType][eIndex] = (elem.label,eConn)
         eCount[eInstName][eType] +=1  
-
+        
     return nodeData,elemData,ipData
 
 # ~~~~~~~~~~
@@ -198,15 +195,12 @@ def getHUfromCT(CTsliceDir,outfilename,resetCTOrigin,ipData):
 
     # Create instance of triLinearInterp class
     interp = et.triLinearInterp(x,y,z,CTvals) 
-    
-    et.interp = interp
 
     # For each integration point, get the HU value by trilinear interpolation from
     # the nearest CT slice voxels
     numPoints = ipData.size
     for i in xrange(numPoints):
         xc,yc,zc = ipData[i]['coord'] 
-        et.i = i
         ipData[i]['HUval'] = interp(xc,yc,zc)    
     
     # Get the current working directory so we can write the results file there
@@ -235,14 +229,15 @@ def createPartInstanceInOdb(odb,instName,instNodes,instElems):
     # Get all the nodes connected to the elements (not all elements in the instance). 
     # Also convert the connectivity from node indices to labels   
     nodeIndices={};
-    for etype,edata in instElems.items():
-        for e in xrange(edata.size):
-            connect = edata[e]['econn']
-            instElems[etype][e]['econn'] = instNodes[connect]['label']
+    for etype in instElems.keys():
+        numElems=len(instElems[etype])
+        for e in xrange(numElems):
+            connect = instElems[etype][e]['econn']
             for i in connect: nodeIndices[i]=1
+            instElems[etype][e]['econn'][:] = instNodes[connect]['label']
              
     # Get the node labels and node coordinates
-    nodeIndices = np.array(nodeIndices.keys(),dtype=int)
+    nodeIndices = np.array(nodeIndices.keys(),dtype=int)   
     nlabels = instNodes[nodeIndices]['label']
     ncoords = instNodes[nodeIndices]['coord']
     indx    = np.argsort(nlabels)
@@ -257,7 +252,7 @@ def createPartInstanceInOdb(odb,instName,instNodes,instElems):
         el = np.ascontiguousarray(edata['label'])
         ec = np.ascontiguousarray(edata['econn'])
         part.addElements(labels=el,connectivity=ec,type=str(etype))
-
+        
     # Create part instance
     odb.rootAssembly.Instance(name=instName,object=part)
     odb.save()
@@ -308,7 +303,7 @@ def getHU(instORset, instORsetName, CTsliceDir, outfilename, resetCTOrigin, writ
     For the specified assembly set or part instance, gets the integration point coordinates
     for all the elements and maps the HU values from the corresponding CT stack to these
     points. Returns a text file that can be used in a subsequent finite element analysis that
-    uses ABAQUS subroutine USDFLD to apply bonhue properties.
+    uses ABAQUS subroutine USDFLD to apply bone properties.
 
     Also creates an odb file with a fieldoutput showing the mapped HU values for checking.
     """ 
