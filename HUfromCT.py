@@ -37,7 +37,7 @@ def getElements(m,instORset,instORsetName):
         
     # Check that elements are supported
     usTypes=[]
-    for eType in eTypes[instName]:
+    for eType in eTypes:
         if not any([True for seType in et.seTypes.keys() if seType in eType]):
             usTypes.append(eType)
     if len(usTypes)>0:
