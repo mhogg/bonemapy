@@ -122,7 +122,7 @@ def getModelData(instORset,instORsetName):
         elemData[eInstName][eType][eIndex] = (elem.label,eConn)
         eCount[eInstName][eType] +=1  
 
-    return (nodeData,elemData,ipData)
+    return nodeData,elemData,ipData
 
 # ~~~~~~~~~~
 
@@ -216,7 +216,7 @@ def getHUfromCT(CTsliceDir,outfilename,resetCTOrigin,ipData):
     file1.close()
     print ('HU results written to file: %s' % (outfilename))
 
-    return 0
+    return
 
 # ~~~~~~~~~~
 
@@ -255,7 +255,7 @@ def createPartInstanceInOdb(odb,instName,instNodes,instElems):
     odb.rootAssembly.Instance(name=instName,object=part)
     odb.save()
     
-    return 0
+    return
 
 # ~~~~~~~~~~
 
