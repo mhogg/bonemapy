@@ -29,16 +29,16 @@ def getElements(m,instORset,instORsetName):
         if not partInfo[e.instanceName].has_key(e.type): partInfo[e.instanceName][e.type]=0
         partInfo[e.instanceName][e.type]+=1  
         
-    # Put all element types in a list
+    # Put all element types from all part instances in a list
     eTypes = []
     for k1 in partInfo.keys():
-        for k2 in partInfo[k1].keys(): et.append(k2)
+        for k2 in partInfo[k1].keys(): eTypes.append(k2)
     eTypes = dict.fromkeys(eTypes,1).keys()
         
     # Check that elements are supported
     usTypes=[]
     for eType in eTypes:
-        if not any([True for seType in et.seTypes.keys() if seType in eType]):
+        if not any([True for seType in et.seTypes.keys() if seType==eType]):
             usTypes.append(eType)
     if len(usTypes)>0:
         print 'Element types %s in %s %s are not supported' % (', '.join(usTypes),instORset,instORsetName)   
@@ -62,7 +62,7 @@ def getModelData(instORset,instORsetName):
     result = getElements(m,instORset,instORsetName)
     if result==None: return None
     else:
-        elements,partInfo = result
+        elements, partInfo = result
         numElems = len(elements)
                
     # Get total number of integration points
