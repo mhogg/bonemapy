@@ -7,7 +7,8 @@
 from abaqus import *
 from abaqusConstants import *
 from odbAccess import *
-import os, numpy, dicom, copy
+import os, dicom, copy
+import numpy as np
 import elementTypes as et
 
 # ~~~~~~~~~~ 
@@ -62,27 +63,27 @@ def getModelData(instORset,instORsetName):
     result = getElements(m,instORset,instORsetName)
     if result==None: return None
     else:
-        elements, partInfo = result
+        partInfo, elements = result
         numElems = len(elements)
+        ec = dict([(ename,eclass()) for ename,eclass in et.seTypes.items()])
                
     # Get total number of integration points
     numIntPts = 0
     for instName in partInfo.keys():
-        for etype,ecount in partInfo[instName].keys():
-            numIntPts += ec[etype].numIntPoints * ecount 
+        for etype,ecount in partInfo[instName].items():
+            numIntPts += ec[etype].numIntPnts * ecount 
     
     # Get node data
     nodeData={}
     for instName in partInfo.keys():
         instNodes = m.rootAssembly.instances[instName].nodes
         numNodes  = len(instNodes)
-        nodeData[instName] = numpy.zeros(numNodes,dtype=[('label','|i4'),('coords','|f4',(3,))])
+        nodeData[instName] = np.zeros(numNodes,dtype=[('label','|i4'),('coord','|f4',(3,))])
         for n in xrange(numNodes):
             node = instNodes[n]
             nodeData[instName][n] = (node.label,node.coordinates)
 
     # Create empty dictionary,array to store element data 
-    ec = dict([(ename,eclass()) for ename,eclass in et.seTypes.items()])
     elemData = copy.deepcopy(partInfo)
     for instName in elemData.keys():
         for k,v in elemData[instName].items():
@@ -91,6 +92,9 @@ def getModelData(instORset,instORsetName):
 
     # Create empty array to store int pnt data
     ipData = np.zeros(numIntPts,dtype=[('iname','|a80'),('label','|i4'),('ipnum','|i4'),('coord','|f4',(3,)),('HUval','|f4')])   
+
+    et.ipData = ipData
+    et.ec = ec
 
     # Calculate integration point coordinates from nodal coordinates using element 
     # interpolation function. Also get element data
@@ -105,16 +109,16 @@ def getModelData(instORset,instORsetName):
         eClass     = ec[eType]
 
         # Get int pnt coords from nodal coords
-        nodeCoords = nodeData[eInstName]['coords'][list(eConn)]
+        nodeCoords = nodeData[eInstName]['coord'][list(eConn)]
         ipCoords   = eClass.getIntPointValues(nodeCoords)
-        nip        = eClass.numIntPoints
+        nip        = eClass.numIntPnts
         
         # Store int pnt data
         iupp = ilow + nip
-        ipData['iname'][ilow:iupp+1] = eInstName
-        ipData['label'][ilow:iupp+1] = elem.label
-        ipData['ipnum'][ilow:iupp+1] = eClass.ipnums 
-        ipData['coord'][ilow:iupp+1] = ipCoords
+        ipData['iname'][ilow:iupp] = eInstName
+        ipData['label'][ilow:iupp] = elem.label
+        ipData['ipnum'][ilow:iupp] = eClass.ipnums 
+        ipData['coord'][ilow:iupp] = ipCoords
         ilow = iupp 
         
         # Store element label and connectivity
@@ -168,19 +172,19 @@ def getHUfromCT(CTsliceDir,outfilename,resetCTOrigin,ipData):
         ippx=ippy=0.0
 
     # Get the x, y coordinates of the slice pixels. The coordinates are taken at the pixel centre
-    x = linspace(ippx,ippx+psx*cols,cols,False)
-    y = linspace(ippy,ippy+psy*rows,rows,False)
+    x = np.linspace(ippx,ippx+psx*cols,cols,False)
+    y = np.linspace(ippy,ippy+psy*rows,rows,False)
 
     # Check that all integration points are bounded by the extent of the CT slices   
-    minx,miny,minz = np.min(ipData['coords'],axis=0)
-    maxx,maxy,maxz = np.max(ipData['coords'],axis=0)
+    minx,miny,minz = np.min(ipData['coord'],axis=0)
+    maxx,maxy,maxz = np.max(ipData['coord'],axis=0)
     if ((minx<x[0] or maxx>x[-1]) or (miny<y[0] or maxy>y[-1]) or (minz<z[0] or maxz>z[-1])):
         print '\nModel outside bounds of CT stack. Model must have been moved from original position'
         return None
 
     # Load all the CT slices into a numpy array
     numSlices = z.shape[0]
-    CTvals = numpy.zeros((numSlices,cols,rows),dtype=numpy.int16)
+    CTvals = np.zeros((numSlices,cols,rows),dtype=np.int16)
     for i in xrange(numSlices):
       fileName = fileList[i]
       ds = dicom.read_file(fileName)
@@ -194,13 +198,16 @@ def getHUfromCT(CTsliceDir,outfilename,resetCTOrigin,ipData):
 
     # Create instance of triLinearInterp class
     interp = et.triLinearInterp(x,y,z,CTvals) 
+    
+    et.interp = interp
 
     # For each integration point, get the HU value by trilinear interpolation from
     # the nearest CT slice voxels
     numPoints = ipData.size
     for i in xrange(numPoints):
-        xc,yc,zc = ipData[i]['coords'] 
-        ipData[i]['HU'] = interp(xc,yc,zc)    
+        xc,yc,zc = ipData[i]['coord'] 
+        et.i = i
+        ipData[i]['HUval'] = interp(xc,yc,zc)    
     
     # Get the current working directory so we can write the results file there
     workingdir  = os.getcwd()
@@ -208,15 +215,15 @@ def getHUfromCT(CTsliceDir,outfilename,resetCTOrigin,ipData):
     file1       = open(outfilename,'w')
     for i in xrange(numPoints):
         ip       = ipData[i]
-        instName = ip['instName']
+        instName = ip['iname']
         label    = ip['label']
         ipnum    = ip['ipnum']
-        huval    = ip['HU']
-        file1.write('%s %6d %1d %8.1f' % (instName,label,ipnum,huval))
+        huval    = ip['HUval']
+        file1.write('%s %7d %2d %8.1f\n' % (instName,label,ipnum,huval))
     file1.close()
     print ('HU results written to file: %s' % (outfilename))
 
-    return
+    return 0
 
 # ~~~~~~~~~~
 
@@ -235,9 +242,9 @@ def createPartInstanceInOdb(odb,instName,instNodes,instElems):
             for i in connect: nodeIndices[i]=1
              
     # Get the node labels and node coordinates
-    nodeIndices = numpy.array(nodeIndices.keys(),dtype=int)
+    nodeIndices = np.array(nodeIndices.keys(),dtype=int)
     nlabels = instNodes[nodeIndices]['label']
-    ncoords = instNodes[nodeIndices]['coords']
+    ncoords = instNodes[nodeIndices]['coord']
     indx    = np.argsort(nlabels)
     nlabels = nlabels[indx]
     ncoords = ncoords[indx]
@@ -247,8 +254,8 @@ def createPartInstanceInOdb(odb,instName,instNodes,instElems):
     
     # Add the elements to the part
     for etype,edata in instElems.items():
-        el = numpy.ascontiguousarray(edata['label'])
-        ec = numpy.ascontiguousarray(edata['econn'])
+        el = np.ascontiguousarray(edata['label'])
+        ec = np.ascontiguousarray(edata['econn'])
         part.addElements(labels=el,connectivity=ec,type=str(etype))
 
     # Create part instance
@@ -280,12 +287,12 @@ def writeOdb(nodeData,elemData,ipData,outfilename):
     fo = frame.FieldOutput(name='HU',description='Mapped HU values',type=SCALAR)
     for instName in elemData.keys():
         i = odb.rootAssembly.instances[instName]
-        indices1 = numpy.where(ipData['instName']==instName)
-        indices2 = numpy.where(ipData[indices1]['ipnum']==1)
+        indices1 = np.where(ipData['iname']==instName)
+        indices2 = np.where(ipData[indices1]['ipnum']==1)
         l = ipData[indices1][indices2]['label']
-        d = ipData[indices1]['HU']
-        l = numpy.ascontiguousarray(l)
-        d = numpy.ascontiguousarray(d.reshape(d.size,1))    
+        d = ipData[indices1]['HUval']
+        l = np.ascontiguousarray(l)
+        d = np.ascontiguousarray(d.reshape(d.size,1))    
         fo.addData(position=INTEGRATION_POINT,instance=i,labels=l,data=d)
 
     # Save and close odb
@@ -301,7 +308,7 @@ def getHU(instORset, instORsetName, CTsliceDir, outfilename, resetCTOrigin, writ
     For the specified assembly set or part instance, gets the integration point coordinates
     for all the elements and maps the HU values from the corresponding CT stack to these
     points. Returns a text file that can be used in a subsequent finite element analysis that
-    uses ABAQUS subroutine USDFLD to apply bone properties.
+    uses ABAQUS subroutine USDFLD to apply bonhue properties.
 
     Also creates an odb file with a fieldoutput showing the mapped HU values for checking.
     """ 
