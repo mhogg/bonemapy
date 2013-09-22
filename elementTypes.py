@@ -50,6 +50,15 @@ class elementC3D4():
                             [ 1.0, 0.0, 0.0],
                             [ 0.0, 1.0, 0.0],
                             [ 0.0, 0.0, 1.0]]) 
+
+# ~~~~~~~~~~                              
+                                                    
+class elementC3D4H(elementC3D4):
+    
+    def __init__(self):
+        elementC3D4.__init__(self)
+        self.name = 'C3D4H' 
+        self.desc = 'Linear tetrahedral element with hybrid formulation'                              
                             
 # ~~~~~~~~~~        
         
@@ -110,7 +119,7 @@ class elementC3D10():
                             [ 0.0, 0.0, 0.5],
                             [ 0.5, 0.0, 0.5],
                             [ 0.0, 0.5, 0.5]])
-                            
+
 # ~~~~~~~~~~                             
 
 class elementC3D10M(elementC3D10):
@@ -118,7 +127,7 @@ class elementC3D10M(elementC3D10):
     def __init__(self):
         elementC3D10.__init__(self)
         self.name = 'C3D10M' 
-        self.desc = 'Modified quadratic tetrahedral element'
+        self.desc = 'Quadratic tetrahedral element with modified formulation'
 
     def setIpcs(self):
         alpha    = 0.1770833333
@@ -126,10 +135,60 @@ class elementC3D10M(elementC3D10):
         self.ipcs = np.array([[alpha,alpha,alpha],
                               [beta, alpha,alpha],
                               [alpha,beta, alpha],
-                              [alpha,alpha,beta ]])       
+                              [alpha,alpha,beta ]])
+                                                  
+# ~~~~~~~~~~                              
+                                                    
+class elementC3D10H(elementC3D10):
+    
+    def __init__(self):
+        elementC3D10.__init__(self)
+        self.name = 'C3D10H' 
+        self.desc = 'Quadratic tetrahedral element with hybrid formulation'                                                       
+                                                                                                                                  
+# ~~~~~~~~~~                              
+                                                       
+class elementC3D10MH(elementC3D10M):
+    
+    def __init__(self):
+        elementC3D10M.__init__(self)
+        self.name = 'C3D10MH' 
+        self.desc = 'Quadratic tetrahedral element with modified hybrid formulation'                                 
+
+# ~~~~~~~~~~  
+                              
+class elementC3D10I(elementC3D10):
+    
+    def __init__(self):
+        elementC3D10.__init__(self)
+        self.name = 'C3D10I' 
+        self.desc = 'Quadratic tetrahedral element with imporved surface stress formulation'
+        self.numIntPnts = 11         
+
+    def setIpcs(self):
+        # From manual: For the general-purpose C3D10I 10-node tetrahedra ... improved stress
+        # visualization is obtained through an 11-point integration rule, consisting of 10 
+        # integration points at the elements' nodes and one integration point at their centroid. 
+        self.ipcs = np.array([[0.00,0.00,0.00],
+                              [1.00,0.00,0.00],
+                              [0.00,1.00,0.00],
+                              [0.00,0.00,1.00]
+                              [0.50,0.00,0.00]
+                              [0.50,0.50,0.00]
+                              [0.00,0.50,0.00]
+                              [0.00,0.00,0.50]
+                              [0.50,0.00,0.50]
+                              [0.00,0.50,0.50],
+                              [0.25,0.25,0.25]])                                       
 
 # ~~~~~~~~~~         
 
 # Supported element types
-seTypes = {C3D4:elementC3D4, C3D10:elementC3D10, C3D10M:elementC3D10M}     
-
+seTypes = {}
+seTypes[C3D4]    = elementC3D4
+seTypes[C3D4H]   = elementC3D4H
+seTypes[C3D10]   = elementC3D10
+seTypes[C3D10H]  = elementC3D10H
+seTypes[C3D10I]  = elementC3D10I
+seTypes[C3D10M]  = elementC3D10M
+seTypes[C3D10MH] = elementC3D10MH

@@ -22,7 +22,7 @@ MIT license - See LICENSE.txt for details on usage and redistribution
 ### Model setup requirements
 
 * The model must be open in the current viewport
-* The model must contain only tetrahedral elements: ABAQUS element types C3D4, C3D10 and C3D10M are all supported.
+* The model must contain only tetrahedral elements. All 3D stress tetrahedral elements are supported (ABAQUS element types C3D4, C3D4H, C3D10, C3D10H, C3D10I, C3D10M, and C3D10MH).
 * Requires that the model coordinates match the CT scan coordinates e.g. the bone model cannot be shifted from its original position
 
 ### CT stack requirements ###
