@@ -10,6 +10,7 @@ from odbAccess import *
 import os, dicom, copy
 import numpy as np
 import elementTypes as et
+import helperClasses as hc
 
 # ~~~~~~~~~~ 
 
@@ -194,7 +195,7 @@ def getHUfromCT(CTsliceDir,outfilename,resetCTOrigin,ipData):
     CTvals = CTvals.swapaxes(0,2)
 
     # Create instance of triLinearInterp class
-    interp = et.triLinearInterp(x,y,z,CTvals) 
+    interp = hc.triLinearInterp(x,y,z,CTvals) 
 
     # For each integration point, get the HU value by trilinear interpolation from
     # the nearest CT slice voxels
