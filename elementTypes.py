@@ -5,7 +5,7 @@
 # This file is part of bonemapy - See LICENSE.txt for information on usage and redistribution
 
 import numpy as np
-from abaqusConstants import C3D4, C3D10, C3D10M 
+from abaqusConstants import C3D4, C3D4H, C3D10, C3D10H, C3D10I, C3D10M, C3D10MH
 
 # ~~~~~~~~~~ 
 
