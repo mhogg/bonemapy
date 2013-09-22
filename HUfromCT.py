@@ -41,9 +41,11 @@ def getElements(m,instORset,instORsetName):
     usTypes=[]
     for eType in eTypes:
         if not any([True for seType in et.seTypes.keys() if seType==eType]):
-            usTypes.append(eType)
+            usTypes.append(str(eType))
     if len(usTypes)>0:
-        print 'Element types %s in %s %s are not supported' % (', '.join(usTypes),instORset,instORsetName)   
+        if len(usTypes)==1: strvars = ('',usTypes[0],instORset,instORsetName,'is')
+        else:               strvars = ('s',', '.join(usTypes),instORset,instORsetName,'are') 
+        print '\nElement type%s %s in %s %s %s not supported' % strvars
         return None
     
     return partInfo, elements
@@ -129,21 +131,13 @@ def getModelData(instORset,instORsetName):
 # ~~~~~~~~~~
 
 def getHUfromCT(CTsliceDir,outfilename,resetCTOrigin,ipData):
-
-    # Get a list of all the CT files in the specified directory
-    if os.path.exists(CTsliceDir) and os.path.isdir(CTsliceDir):
-        fileList = os.listdir(CTsliceDir)
-        fileList = [os.path.join(CTsliceDir,fileName) for fileName in fileList]
-    else:
-        print '\nDirectory does not exist' 
-        return None
-    numFiles = len(fileList)
-
-    # Check that all files in this directory have the same file extension
-    exts = dict([(os.path.splitext(fileName)[-1],1) for fileName in fileList])
-    if len(exts.keys())>1:
-        print '\nDirectory contains more than a single file type: It must contain only CT slice files'
-        return None
+    
+    """Loads CT stack into numpy array and interpolates from the CT voxels to the FE model integration points  """
+    
+    # Get list of CT slice files    
+    fileList = os.listdir(CTsliceDir)
+    fileList = [os.path.join(CTsliceDir,fileName) for fileName in fileList] 
+    numFiles = len(fileList)       
 
     # Get the z coordinates of each slice. All slices should have the (x,y) origin coordinates
     # Put the zcoord and filename into a numpy array. Then sort by zcoord to ensure that the 
@@ -219,7 +213,7 @@ def getHUfromCT(CTsliceDir,outfilename,resetCTOrigin,ipData):
         huval    = ip['HUval']
         file1.write('%s %7d %2d %8.1f\n' % (instName,label,ipnum,huval))
     file1.close()
-    print ('HU results written to file: %s' % (outfilename))
+    print ('\nHU results written to file: %s' % (outfilename))
 
     return 0
 
@@ -315,22 +309,28 @@ def getHU(instORset, instORsetName, CTsliceDir, outfilename, resetCTOrigin, writ
     print '\nbonemapy plug-in to map HU values from CT stack to integration points of FE model'
     
     # Get model data
+    print '\nExtracting model data...'
     result = getModelData(instORset,instORsetName)
     if result is None:
-        print 'Error in getModelData. Exiting'
+        print '\nError in getModelData. Exiting'
         return
     else:
         nodeData,elemData,ipData = result
+        print 'done'
 
     # Map CT scans to model integration points 
+    print '\nMapping HU values from CT stack to FE model...'
     result = getHUfromCT(CTsliceDir,outfilename,resetCTOrigin,ipData)
     if result is None:
-        print 'Error in getHUfromCT. Exiting'
+        print '\nError in getHUfromCT. Exiting'
         return
+    else: print 'done'
 
     # Write odb file to check HU values have been calculated correctly
     if writeOdbOutput:
+        print '\nCreating odb file for checking of mapped HU values...'
         writeOdb(nodeData,elemData,ipData,outfilename)
+        print 'done'
     
     print '\nFinished\n'
     return

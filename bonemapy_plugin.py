@@ -6,6 +6,7 @@
 
 from abaqusGui import *
 from abaqusConstants import ALL
+from kernelAccess import session, mdb
 import os
 
 class Bonemapy_plugin(AFXForm):
@@ -53,18 +54,24 @@ class Bonemapy_plugin(AFXForm):
             if instORsetName not in m.rootAssembly.instances.keys():
                 showAFXErrorDialog(self.getCurrentDialog(), '%s is not a part instance in the current model' % instORsetName)
                 return False
-            #else: elements = elements = m.rootAssembly.instances[instORsetName].elements
         elif instORset=='Assembly set':
             if instORsetName not in m.rootAssembly.allSets.keys():
                 showAFXErrorDialog(self.getCurrentDialog(), '%s is not an assembly set in the current model' % instORsetName)
                 return False
-            #else: elements = m.rootAssembly.allSets[instORsetName].elements
             
         # Check that CT slice directory exists
         CTsliceDir = self.CTsliceDirKw.getValue()
         if not (os.path.exists(CTsliceDir) and os.path.isdir(CTsliceDir)):
             showAFXErrorDialog(self.getCurrentDialog(), 'CT directory "%s" does not exist' % CTsliceDir)
-            return False   
+            return False 
+            
+        # Check that all files in the CT slice directory have the same file extension  
+        fileList = os.listdir(CTsliceDir)
+        fileList = [os.path.join(CTsliceDir,fileName) for fileName in fileList]    
+        exts = dict([(os.path.splitext(fileName)[-1],1) for fileName in fileList])
+        if len(exts.keys())>1:
+            showAFXErrorDialog(self.getCurrentDialog(), 'CT directory "%s" contains more than a single file type: It must contain only dicom files' % CTsliceDir)
+            return False       
 
         # Check for Abaqus version >= 6.11 
         majorNumber, minorNumber, updateNumber = getAFXApp().getVersionNumbers()
