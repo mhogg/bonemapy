@@ -151,7 +151,10 @@ def getHUfromCT(CTsliceDir,outfilename,resetCTOrigin,ipData):
     z = np.zeros(numFiles,dtype=float)
     for i in xrange(numFiles):
         fileName = fileList[i]
-        ds = dicom.read_file(fileName)
+        try: ds = dicom.read_file(fileName)
+        except: 
+            print '\nCannot open CT slice. Dicom files only are supported'
+            return None
         if i==0:
             rows,cols = ds.Rows, ds.Columns
             print ('\nNumber of rows, columns = %d, %d' % (rows,cols))
@@ -308,7 +311,10 @@ def getHU(instORset, instORsetName, CTsliceDir, outfilename, resetCTOrigin, writ
 
     Also creates an odb file with a fieldoutput showing the mapped HU values for checking.
     """ 
-
+    # User message
+    print '\nbonemapy plug-in to map HU values from CT stack to integration points of FE model'
+    
+    # Get model data
     result = getModelData(instORset,instORsetName)
     if result is None:
         print 'Error in getModelData. Exiting'
@@ -316,6 +322,7 @@ def getHU(instORset, instORsetName, CTsliceDir, outfilename, resetCTOrigin, writ
     else:
         nodeData,elemData,ipData = result
 
+    # Map CT scans to model integration points 
     result = getHUfromCT(CTsliceDir,outfilename,resetCTOrigin,ipData)
     if result is None:
         print 'Error in getHUfromCT. Exiting'
