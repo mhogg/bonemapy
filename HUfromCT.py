@@ -1,22 +1,11 @@
+# -*- coding: utf-8 -*-
 
-"""
-File:          HUfromCT
-Version:       v0.1
-Author:        Michael Hogg
-Date created:  16 Feb 2012
-Last modified: 21 Feb 2012
+# Copyright (C) 2013 Michael Hogg
 
-Description:   A plugin to ABAQUS CAE used to map the bone properties from a CT stack
-               to a corresponding assembly set / part instance in a CAE model
-               
-Dependencies:  pydicom, numpy (on Windows 64-bit, this will require ABAQUS 6.10 and above)
-
-Changes:       1. 3 July 2012 - Converted psx and psy to floats. This was required due to
-                  a change in pydicom from 0.9.6 -> 0.9.7. In pydicom 0.9.7, pixel spacings
-                  are now type DS, not float.
-"""
+# This file is part of bonemapy - See LICENSE.txt for information on usage and redistribution
 
 # Import modules required to run script
+
 from abaqus import *
 from abaqusConstants import *
 from odbAccess import *
@@ -114,7 +103,7 @@ def checkInputs(instORset, instORsetName, CTsliceDir):
             print '\n' + instORsetName + ' is not an assembly set in the current model'
             return None
 
-    # Check that all elements are type C3D10 (only element currently supported)
+    # Check that all elements are type C3D10/C3D10M (only element currently supported)
     eTypes={}
     for e in elements: eTypes[e.type]=1
     if ['C3D10' in str(i) for i in eTypes.keys()].count(False) != 0:
@@ -297,7 +286,6 @@ def getHUfromCT(CTsliceDir,outfilename,resetCTOrigin,ipData):
         if result is None: return result
         else: zlow,zupp,ziso = result
 
-        # NOTE: Indices of CTvals are z,x,y, not x,y,z
         nvHU = numpy.array([CTvals[xlow,ylow,zlow], CTvals[xupp,ylow,zlow], 
                             CTvals[xupp,yupp,zlow], CTvals[xlow,yupp,zlow],
                             CTvals[xlow,ylow,zupp], CTvals[xupp,ylow,zupp], 
@@ -347,8 +335,7 @@ def createPartInstanceInOdb(odb,instName,instNodes,instElems):
         nodeData[i] = instNodes[nIndex]
     nodeData.sort()
 
-    # Add the nodes and elements to the part. NOTE: Abaqus 6.10 and below do not accept numpy
-    # data types, so will only work for Abaqus >=6.11
+    # Add the nodes and elements to the part
     nl = numpy.ascontiguousarray(nodeData['label'])
     nc = numpy.ascontiguousarray(nodeData['coords'])
     el = numpy.ascontiguousarray(instElems['label'])
@@ -381,8 +368,7 @@ def writeOdb(nodeData,elemData,ipData,outfilename):
     for instName in elemData.keys(): 
         createPartInstanceInOdb(odb,instName,nodeData[instName],elemData[instName])
 
-    # Create fieldOutput to visualise mapped HU values. NOTE: Abaqus 6.10 and below do not 
-    # accept numpy data types, so need to convert to an in-built Numeric type
+    # Create fieldOutput to visualise mapped HU values
     fo = frame.FieldOutput(name='HU',description='Mapped HU values',type=SCALAR)
     for instName in elemData.keys():
         i = odb.rootAssembly.instances[instName]

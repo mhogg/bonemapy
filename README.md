@@ -4,7 +4,7 @@
 
 Copyright 2013, Michael Hogg (michael.christopher.hogg@gmail.com)
 
-MIT license - See LICENSE.txt for details on usage and distribution
+MIT license - See LICENSE.txt for details on usage and redistribution
 
 ## Requirements
 
