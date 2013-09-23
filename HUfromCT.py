@@ -4,207 +4,151 @@
 
 # This file is part of bonemapy - See LICENSE.txt for information on usage and redistribution
 
-# Import modules required to run script
-
 from abaqus import *
 from abaqusConstants import *
 from odbAccess import *
-import os, shutil
+import os, dicom, copy
+import numpy as np
+import elementTypes as et
+import helperClasses as hc
 
-def shapeFunctionC3D8(nv,ipc):
+# ~~~~~~~~~~ 
 
-    """Interpolates from nodes to integration point (specified by isoparametric coordinates g,h,r) 
-       using ABAQUS element C3D8 shape function (linear hexahedron)"""
-
-    g,h,r=ipc
-    U = (1-g)*(1-h)*(1-r)*nv[0] + (1+g)*(1-h)*(1-r)*nv[1] + \
-        (1+g)*(1+h)*(1-r)*nv[2] + (1-g)*(1+h)*(1-r)*nv[3] + \
-        (1-g)*(1-h)*(1+r)*nv[4] + (1+g)*(1-h)*(1+r)*nv[5] + \
-        (1+g)*(1+h)*(1+r)*nv[6] + (1-g)*(1+h)*(1+r)*nv[7]
-    U = U/8.0
-    return U
-
-def shapeFunctionC3D10(nv,ipc):
-
-    """Interpolates from nodes to integration point (specified by isoparametric coordinates g,h,r) 
-       using ABAQUS element C3D10 shape function (quadratic tetrahedron)"""
-
-    g,h,r=ipc
-    U = (2.0*(1.0-g-h-r)-1.0)*(1.0-g-h-r)*nv[0] + (2.0*g-1.0)*g*nv[1] + (2.0*h-1.0)*h*nv[2] + \
-        (2.0*r-1.0)*r*nv[3] + 4.0*(1.0-g-h-r)*g*nv[4] + 4.0*g*h*nv[5] + 4.0*(1.0-g-h-r)*h*nv[6] + \
-         4.0*(1.0-g-h-r)*r*nv[7] + 4.0*g*r*nv[8] + 4.0*h*r*nv[9]
-    return U
-
-def findNearestPixel(x,xc):
-
-    """ For a given value, finds the nearest values in an array and interpolates between the 
-        values to find the fraction of the given values between these values. The indices of
-        the nearest values in the array and the fraction are returned
-        NOTE: The isoparametric value is within the range For -1<=iso<=1, as required for use
-              with shapeFunctionC3D8
-    """
-    xupp = x.searchsorted(xc); xlow = xupp-1
-    if not (xupp==0 or xupp==x.size): 
-        dx   = 0.5*(x[xupp] - x[xlow])
-        xmid = x[xlow] + dx
-        xiso = (xc-xmid)/dx
-        return (xlow,xupp,xiso)
-    else:
-        print 'Value not found in array'
-        return None
-
-def checkInputs(instORset, instORsetName, CTsliceDir):
-
-    """Checks the input parameters. If successful returns model and elements"""
-
-    # Check that dependencies can be loaded
-    import abaqus 
-    abqversion = abaqus.version
-    abqMajor,abqMinor = abqversion.split('.')[-1].split('-')
-    if int(abqMajor) < 11: 
-        print 'ABAQUS 6.11 and above is required'
-        return None 
+def getElements(m,instORset,instORsetName):
     
-    try:    import numpy
-    except: print 'Requirement numpy cannot be loaded'; return None 
-    
-    try:    import dicom
-    except: print 'Requirement pydicom cannot be loaded'; return None
-
-    # Check that CT slice directory exists
-    if not os.path.isdir(CTsliceDir):
-        print 'CT directory path does not exist'
-        return None
-
-    # Check that the model is open in the active viewport
-    vpn = session.currentViewportName
-    displayed = session.viewports[vpn].displayedObject
-    try: 
-        mName = displayed.modelName
-    except:
-        print '\nModel is not open in the current viewport'
-        return None
-    else:
-        print '\nCurrent model is ' + mName
-        print 'HU values will be calculated for this model\n'
-        m = mdb.models[mName]
-
+    """Get element type and number of nodes per element"""
+        
     # Get elements
     if instORset=='Part instance':
-        if instORsetName in m.rootAssembly.instances.keys():
-            elements = m.rootAssembly.instances[instORsetName].elements
-        else:
-            print '\n' + instORsetName + ' is not a part instance in the current model'
-            return None
+        elements = m.rootAssembly.instances[instORsetName].elements
     elif instORset=='Assembly set':
-        if instORsetName in m.rootAssembly.allSets.keys():
-            elements = m.rootAssembly.allSets[instORsetName].elements
-        else:
-            print '\n' + instORsetName + ' is not an assembly set in the current model'
-            return None
-
-    # Check that all elements are type C3D10/C3D10M (only element currently supported)
-    eTypes={}
-    for e in elements: eTypes[e.type]=1
-    if ['C3D10' in str(i) for i in eTypes.keys()].count(False) != 0:
-        print '\nSpecified element must only contain C3D10 or C3D10M elements'
-        print 'The current element types are present: ' + ', '.join(eTypes.keys())
+        elements = m.rootAssembly.allSets[instORsetName].elements
+    
+    # Get part information: (1) instance names, (2) element types and (3) number of each element type 
+    partInfo={}
+    for e in elements: 
+        if not partInfo.has_key(e.instanceName): partInfo[e.instanceName]={}
+        if not partInfo[e.instanceName].has_key(e.type): partInfo[e.instanceName][e.type]=0
+        partInfo[e.instanceName][e.type]+=1  
+        
+    # Put all element types from all part instances in a list
+    eTypes = []
+    for k1 in partInfo.keys():
+        for k2 in partInfo[k1].keys(): eTypes.append(k2)
+    eTypes = dict.fromkeys(eTypes,1).keys()
+        
+    # Check that elements are supported
+    usTypes=[]
+    for eType in eTypes:
+        if not any([True for seType in et.seTypes.keys() if seType==eType]):
+            usTypes.append(str(eType))
+    if len(usTypes)>0:
+        if len(usTypes)==1: strvars = ('',usTypes[0],instORset,instORsetName,'is')
+        else:               strvars = ('s',', '.join(usTypes),instORset,instORsetName,'are') 
+        print '\nElement type%s %s in %s %s %s not supported' % strvars
         return None
     
-    return (m,elements)
+    return partInfo, elements
+       
+# ~~~~~~~~~~      
 
-def getModelData(m,elements):
+def getModelData(instORset,instORsetName):
 
     """Get the integration point data from the supplied node and elements"""
 
-    import numpy
-
-    # Get all relevant instance names, the number of elements belonging to each instance, and all the
-    # node coordinates for each instances. Note that we use the node index of the instance, not the label
-    instNames={}
-    for e in elements: 
-        if not instNames.has_key(e.instanceName): instNames[e.instanceName]=0
-        instNames[e.instanceName]+=1 
-
+    # Get model - Must be displayed in current viewport
+    vpn = session.currentViewportName
+    displayed = session.viewports[vpn].displayedObject
+    mName = displayed.modelName
+    m = mdb.models[mName]
+    
+    # Get elements and part info
+    result = getElements(m,instORset,instORsetName)
+    if result==None: return None
+    else:
+        partInfo, elements = result
+        numElems = len(elements)
+        ec = dict([(ename,eclass()) for ename,eclass in et.seTypes.items()])
+               
+    # Get total number of integration points
+    numIntPts = 0
+    for instName in partInfo.keys():
+        for etype,ecount in partInfo[instName].items():
+            numIntPts += ec[etype].numIntPnts * ecount 
+    
+    # Get node data
     nodeData={}
-    for instName in instNames.keys():
+    for instName in partInfo.keys():
         instNodes = m.rootAssembly.instances[instName].nodes
         numNodes  = len(instNodes)
-        nodeData[instName] = numpy.zeros(numNodes,dtype=[('label','|i4'),('coords','|f4',(3,))])
+        nodeData[instName] = np.zeros(numNodes,dtype=[('label','|i4'),('coord','|f4',(3,))])
         for n in xrange(numNodes):
             node = instNodes[n]
             nodeData[instName][n] = (node.label,node.coordinates)
 
-    # Define isoparametric positions of the four integration points within an ABAQUS C3D10 element
-    alpha=0.1770833333; beta=0.4687500000
-    iso = numpy.array([[alpha,alpha,alpha],[beta,alpha,alpha],[alpha,beta,alpha],[alpha,alpha,beta]])
+    # Create empty dictionary,array to store element data 
+    elemData = copy.deepcopy(partInfo)
+    for instName in elemData.keys():
+        for k,v in elemData[instName].items():
+            elemData[instName][k] = np.zeros(v,dtype=[('label','|i4'),('econn','|i4',(ec[k].numNodes,))])
+    eCount = dict([(k1,dict([k2,0] for k2 in partInfo[k1].keys())) for k1 in partInfo.keys()]) 
 
-    # Calculate integration point coordinates from nodal coordinates using element shape function and put into array
-    intPtsPerElem = 4
-    nodesPerElem  = 10
-    numElems  = len(elements)
-    numIntPts = numElems*intPtsPerElem
-    elemData  = {}
-    for instName,elemsPerInst in instNames.items():
-        elemData[instName] = numpy.zeros(elemsPerInst,dtype=[('label','|i4'),('connect','|i4',(nodesPerElem,))])
-    connect = numpy.zeros(nodesPerElem,dtype=numpy.int16)
-    ipData  = numpy.zeros(numIntPts,dtype=[('instName','|a80'),('label','|i4'),('ipnum','|i4'),('coords','|f4',(3,)),('HU','|f4')])
-    xc = numpy.zeros(nodesPerElem,dtype=float); yc=xc.copy(); zc=xc.copy()
-    intPntCnt = 0
-    eCount=dict([(instName,0) for instName in instNames.keys()])
+    # Create empty array to store int pnt data
+    ipData = np.zeros(numIntPts,dtype=[('iname','|a80'),('label','|i4'),('ipnum','|i4'),('coord','|f4',(3,)),('HUval','|f4')])   
+
+    # Calculate integration point coordinates from nodal coordinates using element 
+    # interpolation function. Also get element data
+    ilow = 0    
     for e in xrange(numElems):
 
-        elem     = elements[e]
-        eLabel   = elem.label
-        instName = elem.instanceName
-        nodes    = elem.connectivity
+        # Get element data
+        elem       = elements[e]
+        eInstName  = elem.instanceName
+        eConn      = elem.connectivity
+        eType      = elem.type
+        eClass     = ec[eType]
 
-        eIndex   = eCount[instName]
-        elemData[instName][eIndex] = (eLabel,nodes)
+        # Get int pnt coords from nodal coords
+        nodeCoords = nodeData[eInstName]['coord'][list(eConn)]
+        ipCoords   = eClass.getIntPointValues(nodeCoords)
+        nip        = eClass.numIntPnts
+        
+        # Store int pnt data
+        iupp = ilow + nip
+        ipData['iname'][ilow:iupp] = eInstName
+        ipData['label'][ilow:iupp] = elem.label
+        ipData['ipnum'][ilow:iupp] = eClass.ipnums 
+        ipData['coord'][ilow:iupp] = ipCoords
+        ilow = iupp 
+        
+        # Store element label and connectivity
+        eIndex = eCount[eInstName][eType]
+        elemData[eInstName][eType][eIndex] = (elem.label,eConn)
+        eCount[eInstName][eType] +=1  
+        
+    return nodeData,elemData,ipData
 
-        nNodes = len(nodes)
-        for n in xrange(nNodes):
-            nIndex = nodes[n]
-            xc[n],yc[n],zc[n] = nodeData[instName]['coords'][nIndex]
-
-        for i in xrange(4):
-            ipnum = i+1
-            ipxc  = shapeFunctionC3D10(xc,iso[i])
-            ipyc  = shapeFunctionC3D10(yc,iso[i])
-            ipzc  = shapeFunctionC3D10(zc,iso[i]) 
-            ipData[intPntCnt] = (instName,eLabel,ipnum,(ipxc,ipyc,ipzc),0.0)
-            intPntCnt +=1
-
-        eCount[instName]+=1
-
-    return (nodeData,elemData,ipData)
+# ~~~~~~~~~~
 
 def getHUfromCT(CTsliceDir,outfilename,resetCTOrigin,ipData):
-
-    import dicom, numpy
-
-    # Use shutil to get a list of all the CT files in the specified directory
-    if os.path.exists(CTsliceDir) and os.path.isdir(CTsliceDir):
-        fileList = os.listdir(CTsliceDir)
-        fileList = [os.path.join(CTsliceDir,fileName) for fileName in fileList]
-    else:
-        print '\nDirectory does not exist' 
-        return None
-    numFiles = len(fileList)
-
-    # Check that all files in this directory have the same file extension
-    exts = dict([(os.path.splitext(fileName)[-1],1) for fileName in fileList])
-    if len(exts.keys())>1:
-        print '\nDirectory contains more than a single file type: It must contain only CT slice files'
-        return None
+    
+    """Loads CT stack into numpy array and interpolates from the CT voxels to the FE model integration points  """
+    
+    # Get list of CT slice files    
+    fileList = os.listdir(CTsliceDir)
+    fileList = [os.path.join(CTsliceDir,fileName) for fileName in fileList] 
+    numFiles = len(fileList)       
 
     # Get the z coordinates of each slice. All slices should have the (x,y) origin coordinates
     # Put the zcoord and filename into a numpy array. Then sort by zcoord to ensure that the 
     # list of filenames is sorted correctly
-    sliceInfo = numpy.zeros(numFiles,dtype=[('zcoord','|f4'),('filename','|a256')])
+    z = np.zeros(numFiles,dtype=float)
     for i in xrange(numFiles):
         fileName = fileList[i]
-        ds = dicom.read_file(fileName)
+        try: ds = dicom.read_file(fileName)
+        except: 
+            print '\nCannot open CT slice. Dicom files only are supported'
+            return None
         if i==0:
             rows,cols = ds.Rows, ds.Columns
             print ('\nNumber of rows, columns = %d, %d' % (rows,cols))
@@ -212,40 +156,30 @@ def getHUfromCT(CTsliceDir,outfilename,resetCTOrigin,ipData):
             psx = float(psx); psy = float(psy)
             print ('Pixel size: %.3f in X, %.3f in Y' % (psx,psy))
             ippx,ippy = ds.ImagePositionPatient[:2]
-        ippz = ds.ImagePositionPatient[-1]
-        sliceInfo[i] = (ippz,fileName)
+        z[i] = ds.ImagePositionPatient[-1]
         ds.clear()
-    sliceInfo.sort()
-    z = sliceInfo['zcoord']
-    fileList = sliceInfo['filename']
+    indx = np.argsort(z)
+    z = z[indx]
+    fileList = np.array(fileList)[indx]
 
     # If specified set CT slice origin to zero (ie. ignore CT slice origin in CT header)
     if resetCTOrigin:
-        ippx=0.0; ippy=0.0
+        ippx=ippy=0.0
 
     # Get the x, y coordinates of the slice pixels. The coordinates are taken at the pixel centre
-    x = numpy.zeros(cols,dtype=float)    
-    x[0] = ippx
-    for i in xrange(1,cols): x[i] = x[i-1] + psx
+    x = np.linspace(ippx,ippx+psx*cols,cols,False)
+    y = np.linspace(ippy,ippy+psy*rows,rows,False)
 
-    y = numpy.zeros(rows,dtype=float)
-    y[0] = ippy
-    for i in xrange(1,rows): y[i] = y[i-1] + psy
-
-    # Check that all integration points are bounded by the extent of the CT slices
-    minx = ipData['coords'][:,0].min()
-    maxx = ipData['coords'][:,0].max()
-    miny = ipData['coords'][:,1].min()
-    maxy = ipData['coords'][:,1].max()
-    minz = ipData['coords'][:,2].min()
-    maxz = ipData['coords'][:,2].max()
+    # Check that all integration points are bounded by the extent of the CT slices   
+    minx,miny,minz = np.min(ipData['coord'],axis=0)
+    maxx,maxy,maxz = np.max(ipData['coord'],axis=0)
     if ((minx<x[0] or maxx>x[-1]) or (miny<y[0] or maxy>y[-1]) or (minz<z[0] or maxz>z[-1])):
         print '\nModel outside bounds of CT stack. Model must have been moved from original position'
         return None
 
-    # Load all theCTvals CT slices into a numpy array
-    numSlices = z.size
-    CTvals = numpy.zeros((numSlices,cols,rows),dtype=numpy.int16)
+    # Load all the CT slices into a numpy array
+    numSlices = z.shape[0]
+    CTvals = np.zeros((numSlices,cols,rows),dtype=np.int16)
     for i in xrange(numSlices):
       fileName = fileList[i]
       ds = dicom.read_file(fileName)
@@ -254,107 +188,82 @@ def getHUfromCT(CTsliceDir,outfilename,resetCTOrigin,ipData):
 
     # Note: The array ds.PixelArray is indexed by [row,col], which is equivalent to [yi,xi]. Also,
     # because we are adding to CTvals by z slice, then the resulting index of CTvals is [zi,yi,xi].
-    # Correct this to more typical index [xi,yi,zi] by swapping xi and zi
-    CTvals = CTvals.swapaxes(0,2)  # zi,yi,xi -> xi,yi,zi
+    # Correct this to more typical index [xi,yi,zi] by swapping xi and zi e.g. zi,yi,xi -> xi,yi,zi
+    CTvals = CTvals.swapaxes(0,2)
+
+    # Create instance of triLinearInterp class
+    interp = hc.triLinearInterp(x,y,z,CTvals) 
 
     # For each integration point, get the HU value by trilinear interpolation from
     # the nearest CT slice voxels
     numPoints = ipData.size
     for i in xrange(numPoints):
 
-        xc,yc,zc = ipData[i]['coords']
-
-        #xlow = int((xc-ippx)/psx); xupp=xlow+1
-        #if xlow<=0 or xupp>=cols-1: return None
-        #xmid = psx*(xlow+0.5)
-        #xiso = (xc-xmid)/(0.5*psx)
-
-        #ylow = int((yc-ippy)/psy); yupp=ylow+1
-        #if ylow<=0 or yupp>=rows-1: return None
-        #ymid = psy*(ylow+0.5)
-        #yiso = (yc-ymid)/(0.5*psy)
-               
-        result = findNearestPixel(x,xc)
-        if result is None: return result
-        else: xlow,xupp,xiso = result
-
-        result = findNearestPixel(y,yc)
-        if result is None: return result
-        else: ylow,yupp,yiso = result
-
-        result = findNearestPixel(z,zc)
-        if result is None: return result
-        else: zlow,zupp,ziso = result
-
-        nvHU = numpy.array([CTvals[xlow,ylow,zlow], CTvals[xupp,ylow,zlow], 
-                            CTvals[xupp,yupp,zlow], CTvals[xlow,yupp,zlow],
-                            CTvals[xlow,ylow,zupp], CTvals[xupp,ylow,zupp], 
-                            CTvals[xupp,yupp,zupp], CTvals[xlow,yupp,zupp]])
-        ipc = numpy.array([xiso,yiso,ziso])
-        ipData[i]['HU'] = shapeFunctionC3D8(nvHU,ipc)
+        xc,yc,zc = ipData[i]['coord'] 
+        ipData[i]['HUval'] = interp(xc,yc,zc) 
     
     # Get the current working directory so we can write the results file there
     workingdir  = os.getcwd()
     outfilename = os.path.join(workingdir,outfilename+'.txt')
     file1       = open(outfilename,'w')
-    print ('\nWriting HU results to file: %s' % (outfilename))
     for i in xrange(numPoints):
         ip       = ipData[i]
-        instName = ip['instName']
+        instName = ip['iname']
         label    = ip['label']
         ipnum    = ip['ipnum']
-        huval    = ip['HU']
-        file1.write('%s %6d %1d %8.1f\n' % (instName,label,ipnum,huval))
+        huval    = ip['HUval']
+        file1.write('%s %7d %2d %8.1f\n' % (instName,label,ipnum,huval))
     file1.close()
+    print ('\nHU results written to file: %s' % (outfilename))
 
     return 0
 
-def createPartInstanceInOdb(odb,instName,instNodes,instElems):
+# ~~~~~~~~~~
 
-    import numpy
+def createPartInstanceInOdb(odb,instName,instNodes,instElems):
 
     # Create part in odb
     part = odb.Part(name=instName,embeddedSpace=THREE_D, type=DEFORMABLE_BODY)
 
-    # Get all the nodes connected to the elements. Also convert the connectivity from node indices to labels
-    nodesPerElem = 10
-    nodeIndices={}; numElems=len(instElems)
-    for e in xrange(numElems):
-        connect = instElems[e]['connect'] 
-        for i in xrange(len(connect)):
-            nIndex = connect[i]
-            nodeIndices[nIndex] = 1
-            instElems[e]['connect'][i] = instNodes[nIndex]['label']
-    
+    # Get all the nodes connected to the elements (not all elements in the instance). 
+    # Also convert the connectivity from node indices to labels   
+    nodeIndices={};
+    for etype in instElems.keys():
+        numElems=len(instElems[etype])
+        for e in xrange(numElems):
+            connect = instElems[etype][e]['econn']
+            for i in connect: nodeIndices[i]=1
+            instElems[etype][e]['econn'][:] = instNodes[connect]['label']
+             
     # Get the node labels and node coordinates
-    nodeIndices = numpy.array(nodeIndices.keys(),dtype=int)
-    numNodes = nodeIndices.size
-    nodeData = numpy.zeros(numNodes,dtype=[('label','|i4'),('coords','|f4',(3,))])
-    for i in xrange(numNodes):
-        nIndex = nodeIndices[i]
-        nodeData[i] = instNodes[nIndex]
-    nodeData.sort()
-
-    # Add the nodes and elements to the part
-    nl = numpy.ascontiguousarray(nodeData['label'])
-    nc = numpy.ascontiguousarray(nodeData['coords'])
-    el = numpy.ascontiguousarray(instElems['label'])
-    ec = numpy.ascontiguousarray(instElems['connect'])
-    part.addNodes(labels=nl,coordinates=nc)
-    part.addElements(labels=el,connectivity=ec,type='C3D10M')
-
+    nodeIndices = np.array(nodeIndices.keys(),dtype=int)   
+    nlabels = instNodes[nodeIndices]['label']
+    ncoords = instNodes[nodeIndices]['coord']
+    indx    = np.argsort(nlabels)
+    nlabels = nlabels[indx]
+    ncoords = ncoords[indx]
+    
+    # Add the nodes to the part
+    part.addNodes(labels=nlabels,coordinates=ncoords)
+    
+    # Add the elements to the part
+    for etype,edata in instElems.items():
+        el = np.ascontiguousarray(edata['label'])
+        ec = np.ascontiguousarray(edata['econn'])
+        part.addElements(labels=el,connectivity=ec,type=str(etype))
+        
     # Create part instance
     odb.rootAssembly.Instance(name=instName,object=part)
     odb.save()
     
-    return 0
+    return
+
+# ~~~~~~~~~~
 
 def writeOdb(nodeData,elemData,ipData,outfilename):
 
     # Creates an odb from the specified assembly set / part instance. Then
     # creates a frame and a fieldoutput corresponding to the mapped HU values
-    
-    import numpy
 
     # Create new odb file
     odbName = outfilename+'.odb'        
@@ -372,12 +281,12 @@ def writeOdb(nodeData,elemData,ipData,outfilename):
     fo = frame.FieldOutput(name='HU',description='Mapped HU values',type=SCALAR)
     for instName in elemData.keys():
         i = odb.rootAssembly.instances[instName]
-        indices1 = numpy.where(ipData['instName']==instName)
-        indices2 = numpy.where(ipData[indices1]['ipnum']==1)
+        indices1 = np.where(ipData['iname']==instName)
+        indices2 = np.where(ipData[indices1]['ipnum']==1)
         l = ipData[indices1][indices2]['label']
-        d = ipData[indices1]['HU']
-        l = numpy.ascontiguousarray(l)
-        d = numpy.ascontiguousarray(d.reshape(d.size,1))    
+        d = ipData[indices1]['HUval']
+        l = np.ascontiguousarray(l)
+        d = np.ascontiguousarray(d.reshape(d.size,1))    
         fo.addData(position=INTEGRATION_POINT,instance=i,labels=l,data=d)
 
     # Save and close odb
@@ -386,35 +295,43 @@ def writeOdb(nodeData,elemData,ipData,outfilename):
 
     return 0
 
+# ~~~~~~~~~~
+
 def getHU(instORset, instORsetName, CTsliceDir, outfilename, resetCTOrigin, writeOdbOutput):
+    """
+    For the specified assembly set or part instance, gets the integration point coordinates
+    for all the elements and maps the HU values from the corresponding CT stack to these
+    points. Returns a text file that can be used in a subsequent finite element analysis that
+    uses ABAQUS subroutine USDFLD to apply bone properties.
 
-    """For the specified assembly set or part instance, gets the integration point
-       coordinates for all the elements and maps the HU values from the corresponding
-       CT stack to these points. Returns a text file that can be used in a subsequent
-       finite element analysis that uses ABAQUS subroutine USDFLD to apply bone properties""" 
-
-    result = checkInputs(instORset, instORsetName, CTsliceDir)  
+    Also creates an odb file with a fieldoutput showing the mapped HU values for checking.
+    """ 
+    # User message
+    print '\nbonemapy plug-in to map HU values from CT stack to integration points of FE model'
+    
+    # Get model data
+    print '\nExtracting model data...'
+    result = getModelData(instORset,instORsetName)
     if result is None:
-        print 'Error in checkInputs. Exiting'
-        return
-    else: 
-        m,elements = result
-
-    result = getModelData(m,elements)
-    if result is None:
-        print 'Error in getModelData. Exiting'
+        print '\nError in getModelData. Exiting'
         return
     else:
         nodeData,elemData,ipData = result
+        print 'done'
 
+    # Map CT scans to model integration points 
+    print '\nMapping HU values from CT stack to FE model...'
     result = getHUfromCT(CTsliceDir,outfilename,resetCTOrigin,ipData)
     if result is None:
-        print 'Error in getHUfromCT. Exiting'
+        print '\nError in getHUfromCT. Exiting'
         return
+    else: print 'done'
 
     # Write odb file to check HU values have been calculated correctly
     if writeOdbOutput:
+        print '\nCreating odb file for checking of mapped HU values...'
         writeOdb(nodeData,elemData,ipData,outfilename)
+        print 'done'
     
     print '\nFinished\n'
     return
