@@ -1,7 +1,12 @@
+# -*- coding: utf-8 -*-
+
+# Copyright (C) 2013 Michael Hogg
+
+# This file is part of bonemapy - See LICENSE.txt for information on usage and redistribution
+
 from abaqusGui import *
 from abaqusConstants import ALL
 import osutils, os
-
 
 ###########################################################################
 # Class definition
@@ -73,7 +78,7 @@ thisDir = os.path.dirname(thisPath)
 
 toolset = getAFXApp().getAFXMainWindow().getPluginToolset()
 toolset.registerGuiMenuButton(
-    buttonText='pyXRAY tools|Map HU values', 
+    buttonText='bonemapy|Map HU values', 
     object=hUfromCT_plugin(toolset),
     messageId=AFXMode.ID_ACTIVATE,
     icon=None,
