@@ -1,22 +1,11 @@
+# -*- coding: utf-8 -*-
 
-"""
-File:          HUfromCT
-Version:       v0.1
-Author:        Michael Hogg
-Date created:  16 Feb 2012
-Last modified: 21 Feb 2012
+# Copyright (C) 2013 Michael Hogg
 
-Description:   A plugin to ABAQUS CAE used to map the bone properties from a CT stack
-               to a corresponding assembly set / part instance in a CAE model
-               
-Dependencies:  pydicom, numpy (on Windows 64-bit, this will require ABAQUS 6.10 and above)
-
-Changes:       1. 3 July 2012 - Converted psx and psy to floats. This was required due to
-                  a change in pydicom from 0.9.6 -> 0.9.7. In pydicom 0.9.7, pixel spacings
-                  are now type DS, not float.
-"""
+# This file is part of bonemapy - See LICENSE.txt for information on usage and redistribution
 
 # Import modules required to run script
+
 from abaqus import *
 from abaqusConstants import *
 from odbAccess import *
