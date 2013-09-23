@@ -198,8 +198,9 @@ def getHUfromCT(CTsliceDir,outfilename,resetCTOrigin,ipData):
     # the nearest CT slice voxels
     numPoints = ipData.size
     for i in xrange(numPoints):
+
         xc,yc,zc = ipData[i]['coord'] 
-        ipData[i]['HUval'] = interp(xc,yc,zc)    
+        ipData[i]['HUval'] = interp(xc,yc,zc) 
     
     # Get the current working directory so we can write the results file there
     workingdir  = os.getcwd()
