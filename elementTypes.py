@@ -15,10 +15,13 @@ class elementC3D4():
         self.name       = 'C3D4'
         self.desc       = 'Linear tetrahedral element'
         self.numNodes   = 4
-        self.numIntPnts = 1     
+        self.setNumIntPnts()    
         self.setIpnums()
         self.setIpcs()
         self.evalNips()
+        
+    def setNumIntPnts(self):
+        self.numIntPnts = 1        
         
     def setIpnums(self):
         self.ipnums = np.array([i+1 for i in range(self.numIntPnts)]) 
@@ -68,10 +71,13 @@ class elementC3D10():
         self.name       = 'C3D10'
         self.desc       = 'Quadratic tetrahedral element'
         self.numNodes   = 10
-        self.numIntPnts = 4
+        self.setNumIntPnts()
         self.setIpnums()        
         self.setIpcs()
         self.evalNips()
+        
+    def setNumIntPnts(self):
+        self.numIntPnts = 4
         
     def setIpnums(self):
         self.ipnums = np.array([i+1 for i in range(self.numIntPnts)])         
@@ -127,7 +133,7 @@ class elementC3D10M(elementC3D10):
     def __init__(self):
         elementC3D10.__init__(self)
         self.name = 'C3D10M' 
-        self.desc = 'Quadratic tetrahedral element with modified formulation'
+        self.desc = 'Quadratic tetrahedral element with modified formulation'     
 
     def setIpcs(self):
         alpha    = 0.1770833333
@@ -163,7 +169,9 @@ class elementC3D10I(elementC3D10):
         elementC3D10.__init__(self)
         self.name = 'C3D10I' 
         self.desc = 'Quadratic tetrahedral element with imporved surface stress formulation'
-        self.numIntPnts = 11         
+        
+    def setNumIntPnts(self):
+        self.numIntPnts = 11        
 
     def setIpcs(self):
         # From manual: For the general-purpose C3D10I 10-node tetrahedra ... improved stress
@@ -172,12 +180,12 @@ class elementC3D10I(elementC3D10):
         self.ipcs = np.array([[0.00,0.00,0.00],
                               [1.00,0.00,0.00],
                               [0.00,1.00,0.00],
-                              [0.00,0.00,1.00]
-                              [0.50,0.00,0.00]
-                              [0.50,0.50,0.00]
-                              [0.00,0.50,0.00]
-                              [0.00,0.00,0.50]
-                              [0.50,0.00,0.50]
+                              [0.00,0.00,1.00],
+                              [0.50,0.00,0.00],
+                              [0.50,0.50,0.00],
+                              [0.00,0.50,0.00],
+                              [0.00,0.00,0.50],
+                              [0.50,0.00,0.50],
                               [0.00,0.50,0.50],
                               [0.25,0.25,0.25]])                                       
 
