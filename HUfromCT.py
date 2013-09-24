@@ -130,11 +130,10 @@ def getModelData(instORset,instORsetName):
 
 # ~~~~~~~~~~
 
-def getHUfromCT(CTsliceDir,outfilename,resetCTOrigin,ipData):   
-    """
-    Loads CT stack into numpy array and interpolates from the CT 
-    voxels to the FE model integration points
-    """
+def getHUfromCT(CTsliceDir,resetCTOrigin):   
+    
+    """Loads CT stack into numpy array and creates an interpolation function"""
+    
     # Get list of CT slice files    
     fileList = os.listdir(CTsliceDir)
     fileList = [os.path.join(CTsliceDir,fileName) for fileName in fileList] 
@@ -148,14 +147,12 @@ def getHUfromCT(CTsliceDir,outfilename,resetCTOrigin,ipData):
         fileName = fileList[i]
         try: ds = dicom.read_file(fileName)
         except: 
-            print '\nCannot open CT slice. Dicom files only are supported'
+            print '\nCannot open CT slice file %s. Check that this is a valid dicom file' % fileName
             return None
         if i==0:
             rows,cols = ds.Rows, ds.Columns
-            print ('\nNumber of rows, columns = %d, %d' % (rows,cols))
             psx,psy   = ds.PixelSpacing
             psx = float(psx); psy = float(psy)
-            print ('Pixel size: %.3f in X, %.3f in Y' % (psx,psy))
             ippx,ippy = ds.ImagePositionPatient[:2]
         z[i] = ds.ImagePositionPatient[-1]
         ds.clear()
@@ -163,37 +160,56 @@ def getHUfromCT(CTsliceDir,outfilename,resetCTOrigin,ipData):
     z = z[indx]
     fileList = np.array(fileList)[indx]
 
+    # Load all the CT slices into a numpy array
+    numSlices = z.shape[0]
+    CTvals = np.zeros((numSlices,cols,rows),dtype=np.int16)
+    for i in xrange(numSlices):
+        fileName = fileList[i]
+        ds = dicom.read_file(fileName)
+        CTvals[i] = ds.PixelArray
+        ds.clear()
+
+    # Note: The array ds.PixelArray is indexed by [row,col], which is equivalent to [yi,xi]. Also,
+    # because we are adding to CTvals by z slice, then the resulting index of CTvals is [zi,yi,xi].
+    # Correct this to more typical index [xi,yi,zi] by swapping xi and zi e.g. zi,yi,xi -> xi,yi,zi
+    CTvals = CTvals.swapaxes(0,2)
+    
     # If specified set CT slice origin to zero (ie. ignore CT slice origin in CT header)
     if resetCTOrigin:
         ippx=ippy=0.0
 
     # Get the x, y coordinates of the slice pixels. The coordinates are taken at the pixel centre
     x = np.linspace(ippx,ippx+psx*cols,cols,False)
-    y = np.linspace(ippy,ippy+psy*rows,rows,False)
+    y = np.linspace(ippy,ippy+psy*rows,rows,False)    
+
+    # Create instance of triLinearInterp class
+    interp = hc.triLinearInterp(x,y,z,CTvals) 
+    
+    # User message on CT stack info
+    um  = 'CT stack summary:\n'
+    um += 'Number of slices = %d\n' % numSlices
+    um += 'Bot slice z coord = %.1f\n' % z[0] 
+    um += 'Top slice z coord = %.1f\n' % z[-1]
+    um += 'Number of rows, columns = %d, %d\n' % (rows,cols)
+    um += 'Pixel size: %.3f in X, %.3f in Y\n' % (psx,psy)
+    um += 'Slice origin (x,y) = (%.1f,%.1f)\n' % (ippx,ippy)
+    print um
+    
+    return interp
+
+# ~~~~~~~~~~
+
+def mapHUtoMesh(ipData,interp,outfilename):
+
+    """Interpolates the HU values from the CT stack to the int pnts of the FE model"""
 
     # Check that all integration points are bounded by the extent of the CT slices   
     minx,miny,minz = np.min(ipData['coord'],axis=0)
     maxx,maxy,maxz = np.max(ipData['coord'],axis=0)
+    x = interp.x; y=interp.y; z=interp.z
     if ((minx<x[0] or maxx>x[-1]) or (miny<y[0] or maxy>y[-1]) or (minz<z[0] or maxz>z[-1])):
         print '\nModel outside bounds of CT stack. Model must have been moved from original position'
         return None
-
-    # Load all the CT slices into a numpy array
-    numSlices = z.shape[0]
-    CTvals = np.zeros((numSlices,cols,rows),dtype=np.int16)
-    for i in xrange(numSlices):
-      fileName = fileList[i]
-      ds = dicom.read_file(fileName)
-      CTvals[i] = ds.PixelArray
-      ds.clear()
-
-    # Note: The array ds.PixelArray is indexed by [row,col], which is equivalent to [yi,xi]. Also,
-    # because we are adding to CTvals by z slice, then the resulting index of CTvals is [zi,yi,xi].
-    # Correct this to more typical index [xi,yi,zi] by swapping xi and zi e.g. zi,yi,xi -> xi,yi,zi
-    CTvals = CTvals.swapaxes(0,2)
-
-    # Create instance of triLinearInterp class
-    interp = hc.triLinearInterp(x,y,z,CTvals) 
 
     # For each integration point, get the HU value by trilinear interpolation from
     # the nearest CT slice voxels
@@ -214,7 +230,7 @@ def getHUfromCT(CTsliceDir,outfilename,resetCTOrigin,ipData):
         file1.write('%s %7d %2d %8.1f\n' % (instName,label,ipnum,huval))
     file1.close()
     print ('HU results written to file: %s' % (outfilename))
-
+   
     return 0
 
 # ~~~~~~~~~~
@@ -320,11 +336,18 @@ def getHU(instORset, instORsetName, CTsliceDir, outfilename, resetCTOrigin, writ
     else:
         nodeData,elemData,ipData = result
 
-    # Map CT scans to model integration points 
-    print '\nMapping HU values from CT stack to FE model'
-    result = getHUfromCT(CTsliceDir,outfilename,resetCTOrigin,ipData)
+    # Get HU values from the CT stack
+    print '\nGetting HU values from CT stack'   
+    result = getHUfromCT(CTsliceDir,resetCTOrigin)
     if result is None:
         print '\nError in getHUfromCT. Exiting'
+        return
+        
+    # Map HU values to the int pnts of the FE model mesh
+    print '\nMapping HU values to the int pnts of the FE model mesh'   
+    result = mapHUtoMesh(ipData,interp,outfilename)
+    if result is None:
+        print '\nError in mapHUtoMesh. Exiting'
         return
 
     # Write odb file to check HU values have been calculated correctly
