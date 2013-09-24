@@ -342,6 +342,8 @@ def getHU(instORset, instORsetName, CTsliceDir, outfilename, resetCTOrigin, writ
     if result is None:
         print '\nError in getHUfromCT. Exiting'
         return
+    else:
+        interp = result
         
     # Map HU values to the int pnts of the FE model mesh
     print '\nMapping HU values to the int pnts of the FE model mesh'   
