@@ -236,9 +236,9 @@ def mapHUtoMesh(ipData,interp,outfilename):
 # ~~~~~~~~~~
 
 def createPartInstanceInOdb(odb,instName,instNodes,instElems):
-    """
-    Create part instance in odb from provided nodes and elements
-    """
+    
+    """Create part instance in odb from provided nodes and elements"""
+    
     # Create part in odb
     part = odb.Part(name=instName,embeddedSpace=THREE_D, type=DEFORMABLE_BODY)
 

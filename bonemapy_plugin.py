@@ -8,6 +8,7 @@ from abaqusGui import *
 from abaqusConstants import ALL
 from kernelAccess import session, mdb
 import os
+from bonemapy_version import __version__
 
 class Bonemapy_plugin(AFXForm):
 
@@ -42,7 +43,7 @@ class Bonemapy_plugin(AFXForm):
         # Check that object in the current viewport is a model (part or assembly)
         displayedType = getDisplayedObjectType()
         if displayedType!=PART and displayedType!=ASSEMBLY:
-            showAFXErrorDialog(self.getCurrentDialog(), 'Object in current viewport is not a model object')
+            showAFXErrorDialog(self.getCurrentDialog(), 'Error: Object in current viewport is not a model object')
             return False
 
         # Check that the selected assembly set / part instance exists
@@ -52,17 +53,19 @@ class Bonemapy_plugin(AFXForm):
         instORsetName = self.instORsetNameKw.getValue()
         if instORset=='Part instance':
             if instORsetName not in m.rootAssembly.instances.keys():
-                showAFXErrorDialog(self.getCurrentDialog(), '%s is not a part instance in the current model' % instORsetName)
+                showAFXErrorDialog(self.getCurrentDialog(), 'Error: %s is not a part instance in the current model' % instORsetName)
                 return False
+            else: elements = m.rootAssembly.instances[instORsetName].elements
         elif instORset=='Assembly set':
             if instORsetName not in m.rootAssembly.allSets.keys():
-                showAFXErrorDialog(self.getCurrentDialog(), '%s is not an assembly set in the current model' % instORsetName)
+                showAFXErrorDialog(self.getCurrentDialog(), 'Error: %s is not an assembly set in the current model' % instORsetName)
                 return False
+            else: elements = m.rootAssembly.allSets[instORsetName].elements
             
         # Check that CT slice directory exists
         CTsliceDir = self.CTsliceDirKw.getValue()
         if not (os.path.exists(CTsliceDir) and os.path.isdir(CTsliceDir)):
-            showAFXErrorDialog(self.getCurrentDialog(), 'CT directory "%s" does not exist' % CTsliceDir)
+            showAFXErrorDialog(self.getCurrentDialog(), 'Error: CT directory "%s" does not exist' % CTsliceDir)
             return False 
             
         # Check that all files in the CT slice directory have the same file extension  
@@ -70,25 +73,30 @@ class Bonemapy_plugin(AFXForm):
         fileList = [os.path.join(CTsliceDir,fileName) for fileName in fileList]    
         exts = dict([(os.path.splitext(fileName)[-1],1) for fileName in fileList])
         if len(exts.keys())>1:
-            showAFXErrorDialog(self.getCurrentDialog(), 'CT directory "%s" contains more than a single file type: It must contain only dicom files' % CTsliceDir)
+            showAFXErrorDialog(self.getCurrentDialog(), 'Error: CT directory "%s" contains more than a single file type.\nIt must contain only dicom files' % CTsliceDir)
             return False       
 
         # Check for Abaqus version >= 6.11 
         majorNumber, minorNumber, updateNumber = getAFXApp().getVersionNumbers()
         if majorNumber==6 and minorNumber < 11:    
-            showAFXErrorDialog( self.getCurrentDialog(), 'ABAQUS 6.11 and above is required')
+            showAFXErrorDialog( self.getCurrentDialog(), 'Error: ABAQUS 6.11 and above is required')
             return False
         
         # Check for numpy
         try: import numpy
         except: 
-            showAFXErrorDialog( self.getCurrentDialog(), 'Required module numpy cannot be found')
+            showAFXErrorDialog( self.getCurrentDialog(), 'Error: Required module numpy cannot be found')
             return False
             
         # Check for pydicom
         try: import dicom
         except: 
-            showAFXErrorDialog( self.getCurrentDialog(), 'Required module pydicom cannot be found')
+            showAFXErrorDialog( self.getCurrentDialog(), 'Error: Required module pydicom cannot be found')
+            return False          
+            
+        # Check that the part instance / assembly set contains elements
+        if len(elements)==0:
+            showAFXErrorDialog( self.getCurrentDialog(), 'Error: %s %s contains no elements' % (instORset,instORsetName))
             return False          
                     
         return True 
@@ -96,9 +104,11 @@ class Bonemapy_plugin(AFXForm):
 #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 # Register the plug-in
-
-thisPath = os.path.abspath(__file__)
-thisDir  = os.path.dirname(thisPath)
+desc  = 'An ABAQUS plugin used to extract bone properties from CT scans for use in finite element analyses of bone.\n\n'
+desc += 'Uses tri-linear interpolation to map the HU values from the CT scans to the integration point coordinates of the '
+desc += 'mesh elements, as required for simulations that use ABAQUS subroutines such as USDFLD or UMAT to apply the bone properties.\n\n'
+desc += 'Requires that an ABAQUS model be open in the current viewport. Currently only accepts bone models meshed with tetrahedral '
+desc += 'elements (ABAQUS element types C3D4, C3D4H, C3D10, C3D10H, C3D10I, C3D10M and C3D10MH are all supported).\n'
 
 toolset = getAFXApp().getAFXMainWindow().getPluginToolset()
 toolset.registerGuiMenuButton(
@@ -108,8 +118,8 @@ toolset.registerGuiMenuButton(
     icon=None,
     kernelInitString='import HUfromCT',
     applicableModules=ALL,
-    version='0.2.1',
+    version=__version__,
     author='Michael Hogg',
-    description='An ABAQUS plugin used to extract bone properties from CT scans for use in finite element analyses of bone.\n\nUses tri-linear interpolation to map the HU values from the CT scans to the integration point coordinates of the mesh elements, as required for simulations that use ABAQUS subroutines such as USDFLD or UMAT to apply the bone properties.\n\nRequires that an ABAQUS model be open in the current viewport. Currently only accepts bone models meshed with tetrahedral elements (ABAQUS element types C3D4, C3D10 and C3D10M are all supported).',
+    description=desc,
     helpUrl='https://github.com/mhogg/bonemapy'
 )
