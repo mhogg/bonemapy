@@ -310,28 +310,25 @@ def getHU(instORset, instORsetName, CTsliceDir, outfilename, resetCTOrigin, writ
     print '\nbonemapy plug-in to map HU values from CT stack to integration points of FE model'
     
     # Get model data
-    print '\nExtracting model data...'
+    print '\nExtracting model data'
     result = getModelData(instORset,instORsetName)
     if result is None:
         print '\nError in getModelData. Exiting'
         return
     else:
         nodeData,elemData,ipData = result
-        print 'done'
 
     # Map CT scans to model integration points 
-    print '\nMapping HU values from CT stack to FE model...'
+    print '\nMapping HU values from CT stack to FE model'
     result = getHUfromCT(CTsliceDir,outfilename,resetCTOrigin,ipData)
     if result is None:
         print '\nError in getHUfromCT. Exiting'
         return
-    else: print 'done'
 
     # Write odb file to check HU values have been calculated correctly
     if writeOdbOutput:
-        print '\nCreating odb file for checking of mapped HU values...'
+        print '\nCreating odb file for checking of mapped HU values'
         writeOdb(nodeData,elemData,ipData,outfilename)
-        print 'done'
     
     print '\nFinished\n'
     return
