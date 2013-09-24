@@ -54,7 +54,7 @@ def getElements(m,instORset,instORsetName):
 
 def getModelData(instORset,instORsetName):
 
-    """Get the integration point data from the supplied node and elements"""
+    """Get the node, element and int pnt data from the supplied part instance/assembly set"""
 
     # Get model - Must be displayed in current viewport
     vpn = session.currentViewportName
@@ -130,10 +130,11 @@ def getModelData(instORset,instORsetName):
 
 # ~~~~~~~~~~
 
-def getHUfromCT(CTsliceDir,outfilename,resetCTOrigin,ipData):
-    
-    """Loads CT stack into numpy array and interpolates from the CT voxels to the FE model integration points  """
-    
+def getHUfromCT(CTsliceDir,outfilename,resetCTOrigin,ipData):   
+    """
+    Loads CT stack into numpy array and interpolates from the CT 
+    voxels to the FE model integration points
+    """
     # Get list of CT slice files    
     fileList = os.listdir(CTsliceDir)
     fileList = [os.path.join(CTsliceDir,fileName) for fileName in fileList] 
@@ -198,13 +199,11 @@ def getHUfromCT(CTsliceDir,outfilename,resetCTOrigin,ipData):
     # the nearest CT slice voxels
     numPoints = ipData.size
     for i in xrange(numPoints):
-
         xc,yc,zc = ipData[i]['coord'] 
         ipData[i]['HUval'] = interp(xc,yc,zc) 
     
     # Get the current working directory so we can write the results file there
-    workingdir  = os.getcwd()
-    outfilename = os.path.join(workingdir,outfilename+'.txt')
+    outfilename = os.path.join(os.getcwd(),outfilename+'.txt')
     file1       = open(outfilename,'w')
     for i in xrange(numPoints):
         ip       = ipData[i]
@@ -214,14 +213,16 @@ def getHUfromCT(CTsliceDir,outfilename,resetCTOrigin,ipData):
         huval    = ip['HUval']
         file1.write('%s %7d %2d %8.1f\n' % (instName,label,ipnum,huval))
     file1.close()
-    print ('\nHU results written to file: %s' % (outfilename))
+    print ('HU results written to file: %s' % (outfilename))
 
     return 0
 
 # ~~~~~~~~~~
 
 def createPartInstanceInOdb(odb,instName,instNodes,instElems):
-
+    """
+    Create part instance in odb from provided nodes and elements
+    """
     # Create part in odb
     part = odb.Part(name=instName,embeddedSpace=THREE_D, type=DEFORMABLE_BODY)
 
@@ -256,15 +257,15 @@ def createPartInstanceInOdb(odb,instName,instNodes,instElems):
     odb.rootAssembly.Instance(name=instName,object=part)
     odb.save()
     
-    return
+    return 0
 
 # ~~~~~~~~~~
 
 def writeOdb(nodeData,elemData,ipData,outfilename):
-
-    # Creates an odb from the specified assembly set / part instance. Then
-    # creates a frame and a fieldoutput corresponding to the mapped HU values
-
+    """
+    Creates an odb from the specified assembly set / part instance. Then
+    creates a frame and a fieldoutput corresponding to the mapped HU values
+    """
     # Create new odb file
     odbName = outfilename+'.odb'        
     odb     = Odb(name=odbName)
@@ -292,6 +293,7 @@ def writeOdb(nodeData,elemData,ipData,outfilename):
     # Save and close odb
     odb.save()
     odb.close()
+    print ('Odb file created: %s' % (os.path.join(os.getcwd(),odbName)))
 
     return 0
 
@@ -328,7 +330,10 @@ def getHU(instORset, instORsetName, CTsliceDir, outfilename, resetCTOrigin, writ
     # Write odb file to check HU values have been calculated correctly
     if writeOdbOutput:
         print '\nCreating odb file for checking of mapped HU values'
-        writeOdb(nodeData,elemData,ipData,outfilename)
+        result = writeOdb(nodeData,elemData,ipData,outfilename)
+        if result is None:
+            print '\nError in writeOdbOutput. Exiting'
+            return
     
     print '\nFinished\n'
     return
