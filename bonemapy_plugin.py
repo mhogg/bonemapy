@@ -108,7 +108,7 @@ toolset.registerGuiMenuButton(
     icon=None,
     kernelInitString='import HUfromCT',
     applicableModules=ALL,
-    version='0.2.0',
+    version='0.2.1',
     author='Michael Hogg',
     description='An ABAQUS plugin used to extract bone properties from CT scans for use in finite element analyses of bone.\n\nUses tri-linear interpolation to map the HU values from the CT scans to the integration point coordinates of the mesh elements, as required for simulations that use ABAQUS subroutines such as USDFLD or UMAT to apply the bone properties.\n\nRequires that an ABAQUS model be open in the current viewport. Currently only accepts bone models meshed with tetrahedral elements (ABAQUS element types C3D4, C3D10 and C3D10M are all supported).',
     helpUrl='https://github.com/mhogg/bonemapy'
