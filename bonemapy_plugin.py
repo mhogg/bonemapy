@@ -54,10 +54,12 @@ class Bonemapy_plugin(AFXForm):
             if instORsetName not in m.rootAssembly.instances.keys():
                 showAFXErrorDialog(self.getCurrentDialog(), '%s is not a part instance in the current model' % instORsetName)
                 return False
+            else: elements = m.rootAssembly.instances[instORsetName].elements
         elif instORset=='Assembly set':
             if instORsetName not in m.rootAssembly.allSets.keys():
                 showAFXErrorDialog(self.getCurrentDialog(), '%s is not an assembly set in the current model' % instORsetName)
                 return False
+            else: elements = m.rootAssembly.allSets[instORsetName].elements
             
         # Check that CT slice directory exists
         CTsliceDir = self.CTsliceDirKw.getValue()
@@ -89,6 +91,11 @@ class Bonemapy_plugin(AFXForm):
         try: import dicom
         except: 
             showAFXErrorDialog( self.getCurrentDialog(), 'Required module pydicom cannot be found')
+            return False          
+            
+        # Check that the part instance / assembly set contains elements
+        if len(elements)==0:
+            showAFXErrorDialog( self.getCurrentDialog(), '%s %s contains no elements' % (instORset,instORsetName))
             return False          
                     
         return True 
