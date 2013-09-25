@@ -63,7 +63,22 @@ Currently bonemapy has only one requirement, pydicom, that is not built into ABA
 
 ## Usage
 
+* Open ABAQUS/CAE
+* Open the ABAQUS model within the current viewport
+* On the toolbar at the top of the screen, select:
 
+        Plug-ins --> bonemapy --> Map HU from CT
+  
+  This will launch the bonemapy GUI
+
+* Complete the details in the GUI, which include:
+
+  + The name of the Part instance / Assembly set representing the bone element set
+  + The location of the directory containing the CT stack 
+  + The base name of all output files (txt of HU values, ABAQUS odb file of mapped values)
+
+* Click OK to run bonemapy
+* Look at the message area at the bottom of the screen for messages. On completion 'Finished' will be shown.
 
 ## Help
 
