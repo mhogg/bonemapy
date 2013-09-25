@@ -55,15 +55,12 @@ The ABAQUS GUI is built on Python, and has its own Python installation. This Pyt
 
 Currently bonemapy has only one requirement, pydicom, that is not built into ABAQUS. The easiest way of installating this is to:
 
-* Download the zip file of the latest pydicom release from the project web site
-* Unzip the folder (anywhere on your computer). This will typically be called `pydicom-X.X.X`
-* Within this folder is a sub-folder called `dicom`. Copy the entire `dicom` folder to the ABAQUS python `Lib\site-packages` folder. As noted above for the `abaqus_plugins` directory, the location of this directory depends on the ABAQUS version. Possible locations are:
+* Download the zip file of the latest pydicom source release from the [pydicom project site](https://code.google.com/p/pydicom/) or [PyPi](https://pypi.python.org/pypi/pydicom/)
+* Unzip this to a convenient location
+* Open a command prompt and browse to folder `pydicom-X.X.X` (containing the setup.py file)
+* At the command prompt enter:
 
-    v6.11-1: `C:\SIMULIA\Abaqus\6.11-1\External\Python\Lib\site-packages`
-
-    v6.12-1: `C:\SIMULIA\Abaqus\6.12-1\tools\SMApy\Lib\site-packages`
-
-    v6.13-1: `C:\SIMULIA\Abaqus\6.13-1\tools\SMApy\python2.6\Lib\site-packages`
+        abaqus python setup.py install
 
 ## Help
 
