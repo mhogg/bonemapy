@@ -7,10 +7,15 @@
 from abaqus import *
 from abaqusConstants import *
 from odbAccess import *
-import os, dicom, copy
-import numpy as np
+import os, copy
 import elementTypes as et
 import helperClasses as hc
+
+# Use try to prevent error importing missing modules when bonemapy plug-in is launched
+try:
+    import numpy as np
+    import dicom
+except: pass
 
 # ~~~~~~~~~~ 
 
