@@ -42,7 +42,6 @@ The ABAQUS GUI is built on Python, and has its own Python installation. This Pyt
 
 * Download the zip file of the latest bonemapy release
 * Unzip the folder (anywhere on your computer). This folder will typically be called `bonemapy-X.X.X`
-* Rename this folder to `bonemapy`
 * Copy this folder to the `abaqus_plugins` directory within your ABAQUS installation. To complicate matters, this is in a different location depending on the ABAQUS version. For the default ABAQUS installation location, possible locations are:
 
     v6.11-1: `C:\SIMULIA\Abaqus\6.11-1\abaqus_plugins`
@@ -57,10 +56,14 @@ Currently bonemapy has only one requirement, pydicom, that is not built into ABA
 
 * Download the zip file of the latest pydicom source release from the [pydicom project site](https://code.google.com/p/pydicom/) or [PyPi](https://pypi.python.org/pypi/pydicom/)
 * Unzip this to a convenient location
-* Open a command prompt and browse to folder `pydicom-X.X.X` (containing the setup.py file)
+* Open a command prompt and browse to folder `pydicom-X.X.X` (containing file setup.py)
 * At the command prompt enter:
 
         abaqus python setup.py install
+
+## Usage
+
+
 
 ## Help
 
