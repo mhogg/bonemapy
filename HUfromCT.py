@@ -166,7 +166,7 @@ def getHUfromCT(CTsliceDir,resetCTOrigin):
     for i in xrange(numSlices):
         fileName = fileList[i]
         ds = dicom.read_file(fileName)
-        CTvals[i] = ds.PixelArray
+        CTvals[i] = ds.pixel_array
         ds.clear()
 
     # Note: The array ds.PixelArray is indexed by [row,col], which is equivalent to [yi,xi]. Also,
