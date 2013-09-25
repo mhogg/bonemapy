@@ -37,7 +37,7 @@ class BonemapyDB(AFXDataDialog):
         
         AFXTextField(p=fileTextHf2, ncols=42, labelText='Directory path: ', tgt=form.CTsliceDirKw, sel=0,
                      opts=AFXTEXTFIELD_STRING|LAYOUT_CENTER_Y|JUSTIFY_LEFT)
-        icon = afxCreatePNGIcon(os.path.join(thisDir,'fileSelectSmall.png'))
+        icon = afxCreatePNGIcon(os.path.join(thisDir,r'icons\fileSelectSmall.png'))
         FXButton(p=fileTextHf2, text='', ic=icon, tgt=dirHandler, sel=AFXMode.ID_ACTIVATE,
                  opts=BUTTON_NORMAL|LAYOUT_CENTER_Y, x=0, y=0, w=0, h=0, pl=1, pr=1, pt=1, pb=1)
         FXCheckButton(p=GroupBox_2, text='Reset slice origin', tgt=form.resetCTOriginKw, sel=0)
