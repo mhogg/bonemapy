@@ -52,7 +52,7 @@ Currently bonemapy has only one requirement, pydicom, that is not built into ABA
 
 * Download the zip file of the latest pydicom release from the project web site
 * Unzip the folder (anywhere on your computer)
-* Copy the entire `dicom` folder to the ABAQUS python `Lib\site-packages` folder. As noted for the `abaqus_plugins` directory above, the location depends on the ABAQUS version. Possible locations are:
+* Copy the entire `dicom` folder to the ABAQUS python `Lib\site-packages` folder. As noted above for the `abaqus_plugins` directory, the location of this directory depends on the ABAQUS version. Possible locations are:
   + v6.11-1: `C:\SIMULIA\Abaqus\6.11-1\External\Python\Lib\site-packages`
   + v6.12-1: `C:\SIMULIA\Abaqus\6.12-1\tools\SMApy\Lib\site-packages`
   + v6.13-1: `C:\SIMULIA\Abaqus\6.13-1\tools\SMApy\python2.6\Lib\site-packages`
