@@ -29,3 +29,34 @@ MIT license - See LICENSE.txt for details on usage and redistribution
 
 * All CT slices should be located in the same directory. This directory must not contain any other file types or slices belonging to other stacks.  
 * It is assumed that all slices have the same origin (i.e. same x,y coordinate)
+
+## Installation
+
+bonemapy is an ABAQUS plug-in. ABAQUS plug-ins may be installed in several ways. Only one of the ways is discussed here. For other options the user is referred to the ABAQUS user manuals. 
+
+The ABAQUS GUI is built on Python, and has its own Python installation. Due to this difference, some guidance is provided here on how to install bonemapy's dependencies.
+
+####1. Installation of bonemapy plug-in  
+
+* Download the zip file of the latest bonemapy release
+* Unzip the folder (anywhere on your computer). This folder will typically be called bonemapy-X.X.X. 
+* Rename this folder to bonemapy
+* Copy this folder to the `abaqus_plugins` directory within your ABAQUS installation. To complicate matters, this is in a different location depending on the ABAQUS version. For the default ABAQUS installation location, possible locations are:
+  + v6.11-1: `C:\SIMULIA\Abaqus\6.11-1\abaqus_plugins`
+  + v6.12-1: `C:\SIMULIA\Abaqus\6.12-1\code\python\lib\abaqus_plugins`
+  + v6.13-1: `C:\SIMULIA\Abaqus\6.13-1\code\python\lib\abaqus_plugins`
+
+####2. Installation of bonemapy requirements
+
+Currently bonemapy has only one requirement, pydicom, that is not built into ABAQUS. The easiest way of installating this is to:
+
+* Download the zip file of the latest pydicom release from the project web site
+* Unzip the folder (anywhere on your computer)
+* Copy the entire `dicom` folder to the ABAQUS python `Lib\site-packages` folder. As noted for the `abaqus_plugins` directory above, the location depends on the ABAQUS version. Possible locations are:
+  * v6.11-1: `C:\SIMULIA\Abaqus\6.11-1\External\Python\Lib\site-packages`
+  * v6.12-1: `C:\SIMULIA\Abaqus\6.12-1\tools\SMApy\Lib\site-packages`
+  * v6.13-1: `C:\SIMULIA\Abaqus\6.13-1\tools\SMApy\python2.6\Lib\site-packages`
+
+## Help
+
+If help is required, please open an Issue or a Pull Request on Github. 
