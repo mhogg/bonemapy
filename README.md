@@ -2,7 +2,7 @@
 
 **An ABAQUS plug-in to map bone properties from CT scans to 3D finite element bone/implant models. This is typically used for applying heterogeneous material properties to the bone model.**
 
-**Developed together with [pyvXRAY](https://github.com/mhogg/pyvxray) and [BMDanalyse](https://github.com/mhogg/BMDanalyse) to provide tools for preparation and post-processing of numerical bone/implant models.**
+**Developed together with [pyvXRAY](https://github.com/mhogg/pyvxray) and [BMDanalyse](https://github.com/mhogg/BMDanalyse) to provide tools for preparation and post-processing of bone/implant computer models.**
 
 Copyright 2013, Michael Hogg (michael.christopher.hogg@gmail.com)
 
