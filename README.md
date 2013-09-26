@@ -65,7 +65,7 @@ Currently bonemapy has only one requirement that is not built into ABAQUS, which
 
 * Open ABAQUS/CAE
 * Open the ABAQUS model within the current viewport
-* On the toolbar at the top of the screen, select:
+* On the menubar at the top of the screen, select:
 
         Plug-ins --> bonemapy --> Map HU from CT
   
