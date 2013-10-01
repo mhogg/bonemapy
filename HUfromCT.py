@@ -273,7 +273,7 @@ def createPartInstanceInOdb(odb,instName,instNodes,instElems):
         el = np.ascontiguousarray(edata['label'])
         ec = np.ascontiguousarray(edata['econn'])
         part.addElements(labels=el,connectivity=ec,type=str(etype))
-        
+               
     # Create part instance
     odb.rootAssembly.Instance(name=instName,object=part)
     odb.save()
@@ -298,6 +298,9 @@ def writeOdb(nodeData,elemData,ipData,outfilename):
     # Copy all the elements and associated nodes to the odb
     for instName in elemData.keys(): 
         createPartInstanceInOdb(odb,instName,nodeData[instName],elemData[instName])
+        
+    # Create an assembly set for the part instances
+    # PUT CODE HERE
 
     # Create fieldOutput to visualise mapped HU values
     fo = frame.FieldOutput(name='HU',description='Mapped HU values',type=SCALAR)
