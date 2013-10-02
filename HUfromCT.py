@@ -131,11 +131,16 @@ def getModelData(instORset,instORsetName):
         elemData[eInstName][eType][eIndex] = (elem.label,eConn)
         eCount[eInstName][eType] +=1  
         
-    return nodeData,elemData,ipData
+    # Get bounding box for int pnt data
+    minx,miny,minz = np.min(ipData['coord'],axis=0)
+    maxx,maxy,maxz = np.max(ipData['coord'],axis=0)
+    bbox = [[minx,miny,minz],[maxx,maxy,maxz]]
+        
+    return nodeData,elemData,ipData,bbox
 
 # ~~~~~~~~~~
 
-def getHUfromCT(CTsliceDir,resetCTOrigin):   
+def getHUfromCT(CTsliceDir,resetCTOrigin,bbox):   
     
     """Loads CT stack into numpy array and creates an interpolation function"""
     
@@ -164,12 +169,30 @@ def getHUfromCT(CTsliceDir,resetCTOrigin):
     indx = np.argsort(z)
     z = z[indx]
     fileList = np.array(fileList)[indx]
+    
+    # If specified set CT slice origin to zero (ie. ignore CT slice origin in CT header)
+    if resetCTOrigin:
+        ippx=ippy=0.0
 
-    # Load all the CT slices into a numpy array
+    # Get the x, y coordinates of the slice pixels. The coordinates are taken at the pixel centre
+    x = np.linspace(ippx,ippx+psx*cols,cols,False)
+    y = np.linspace(ippy,ippy+psy*rows,rows,False)      
+    
+    # Check that the model data lies within the bounds of the CT stack
+    minx,miny,minz = bbox[0]
+    maxx,maxy,maxz = bbox[1]
+    if ((minx<x[0] or maxx>x[-1]) or (miny<y[0] or maxy>y[-1]) or (minz<z[0] or maxz>z[-1])):
+        print '\nModel outside bounds of CT stack. Model must have been moved from original position'
+        return None    
+    
+    # Load the CT slices into a numpy array. Only load the CT slices that are required
+    ziLow = z.searchsorted(minz)-1
+    ziUpp = z.searchsorted(maxz)+1
+    z     = z[ziLow:ziUpp]
     numSlices = z.shape[0]
     CTvals = np.zeros((numSlices,cols,rows),dtype=np.int16)
     for i in xrange(numSlices):
-        fileName = fileList[i]
+        fileName = fileList[ziLow+i]
         ds = dicom.read_file(fileName)
         CTvals[i] = ds.pixel_array
         ds.clear()
@@ -179,14 +202,6 @@ def getHUfromCT(CTsliceDir,resetCTOrigin):
     # Correct this to more typical index [xi,yi,zi] by swapping xi and zi e.g. zi,yi,xi -> xi,yi,zi
     CTvals = CTvals.swapaxes(0,2)
     
-    # If specified set CT slice origin to zero (ie. ignore CT slice origin in CT header)
-    if resetCTOrigin:
-        ippx=ippy=0.0
-
-    # Get the x, y coordinates of the slice pixels. The coordinates are taken at the pixel centre
-    x = np.linspace(ippx,ippx+psx*cols,cols,False)
-    y = np.linspace(ippy,ippy+psy*rows,rows,False)    
-
     # Create instance of triLinearInterp class
     interp = hc.triLinearInterp(x,y,z,CTvals) 
     
@@ -204,17 +219,9 @@ def getHUfromCT(CTsliceDir,resetCTOrigin):
 
 # ~~~~~~~~~~
 
-def mapHUtoMesh(ipData,interp,outfilename):
+def mapHUtoMesh(ipData,interp):
 
     """Interpolates the HU values from the CT stack to the int pnts of the FE model"""
-
-    # Check that all integration points are bounded by the extent of the CT slices   
-    minx,miny,minz = np.min(ipData['coord'],axis=0)
-    maxx,maxy,maxz = np.max(ipData['coord'],axis=0)
-    x = interp.x; y=interp.y; z=interp.z
-    if ((minx<x[0] or maxx>x[-1]) or (miny<y[0] or maxy>y[-1]) or (minz<z[0] or maxz>z[-1])):
-        print '\nModel outside bounds of CT stack. Model must have been moved from original position'
-        return None
 
     # For each integration point, get the HU value by trilinear interpolation from
     # the nearest CT slice voxels
@@ -223,9 +230,18 @@ def mapHUtoMesh(ipData,interp,outfilename):
         xc,yc,zc = ipData[i]['coord'] 
         ipData[i]['HUval'] = interp(xc,yc,zc) 
     
+    return ipData
+
+# ~~~~~~~~~~
+    
+def writeOutput(ipData,outfilename):
+
+    """ Writes the text output """
+    
     # Get the current working directory so we can write the results file there
     outfilename = os.path.join(os.getcwd(),outfilename+'.txt')
     file1       = open(outfilename,'w')
+    numPoints   = ipData.size
     for i in xrange(numPoints):
         ip       = ipData[i]
         instName = ip['iname']
@@ -273,7 +289,7 @@ def createPartInstanceInOdb(odb,instName,instNodes,instElems):
         el = np.ascontiguousarray(edata['label'])
         ec = np.ascontiguousarray(edata['econn'])
         part.addElements(labels=el,connectivity=ec,type=str(etype))
-        
+               
     # Create part instance
     odb.rootAssembly.Instance(name=instName,object=part)
     odb.save()
@@ -282,7 +298,7 @@ def createPartInstanceInOdb(odb,instName,instNodes,instElems):
 
 # ~~~~~~~~~~
 
-def writeOdb(nodeData,elemData,ipData,outfilename):
+def writeOdb(nodeData,elemData,ipData,instORset,instORsetName,outfilename):
     """
     Creates an odb from the specified assembly set / part instance. Then
     creates a frame and a fieldoutput corresponding to the mapped HU values
@@ -298,7 +314,25 @@ def writeOdb(nodeData,elemData,ipData,outfilename):
     # Copy all the elements and associated nodes to the odb
     for instName in elemData.keys(): 
         createPartInstanceInOdb(odb,instName,nodeData[instName],elemData[instName])
-
+    
+    # Create an element set for the part instance / assembly set. This is required 
+    # for use with the pyvXRAY plug-in   
+    if instORset=='Assembly set':
+        elabels=[]
+        for instName in elemData.keys():
+            el=np.array([],dtype=int)
+            for edata in elemData[instName].values():
+                el = np.concatenate((el,edata['label']))
+            el.sort()
+            elabels.append([instName,el])
+        odb.rootAssembly.ElementSetFromElementLabels(name=instORsetName,elementLabels=elabels)  
+    elif instORset=='Part instance':
+        el=np.array([],dtype=int)
+        for edata in elemData[instORsetName].values():
+            el = np.concatenate((el,edata['label']))
+        el.sort()
+        odb.parts[instORsetName].ElementSetFromElementLabels(name='ALL',elementLabels=el)
+    
     # Create fieldOutput to visualise mapped HU values
     fo = frame.FieldOutput(name='HU',description='Mapped HU values',type=SCALAR)
     for instName in elemData.keys():
@@ -339,11 +373,11 @@ def getHU(instORset, instORsetName, CTsliceDir, outfilename, resetCTOrigin, writ
         print '\nError in getModelData. Exiting'
         return
     else:
-        nodeData,elemData,ipData = result
+        nodeData,elemData,ipData,bbox = result
 
     # Get HU values from the CT stack
     print '\nGetting HU values from CT stack'   
-    result = getHUfromCT(CTsliceDir,resetCTOrigin)
+    result = getHUfromCT(CTsliceDir,resetCTOrigin,bbox)
     if result is None:
         print '\nError in getHUfromCT. Exiting'
         return
@@ -352,15 +386,24 @@ def getHU(instORset, instORsetName, CTsliceDir, outfilename, resetCTOrigin, writ
         
     # Map HU values to the int pnts of the FE model mesh
     print '\nMapping HU values to the int pnts of the FE model mesh'   
-    result = mapHUtoMesh(ipData,interp,outfilename)
+    result = mapHUtoMesh(ipData,interp)
     if result is None:
         print '\nError in mapHUtoMesh. Exiting'
         return
+    else:
+        ipData = result
 
+    # Write HU values to text file
+    print '\nWriting text output'   
+    result = writeOutput(ipData,outfilename)
+    if result is None:
+        print '\nError in writeOutput. Exiting'
+        return        
+    
     # Write odb file to check HU values have been calculated correctly
     if writeOdbOutput:
         print '\nCreating odb file for checking of mapped HU values'
-        result = writeOdb(nodeData,elemData,ipData,outfilename)
+        result = writeOdb(nodeData,elemData,ipData,instORset,instORsetName,outfilename)
         if result is None:
             print '\nError in writeOdbOutput. Exiting'
             return
