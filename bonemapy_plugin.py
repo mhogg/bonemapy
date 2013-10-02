@@ -26,16 +26,47 @@ class Bonemapy_plugin(AFXForm):
         self.radioButtonGroups['instORset'][2][2] = 'Part instance'   
         self.instORsetKw1.setValue(1) # Set the first radioButton as selected by default 
         
+        self.modelNameKw      = AFXStringKeyword(self.cmd, 'modelName', True, '')
+        self.regionNameKw     = AFXStringKeyword(self.cmd, 'regionName', True, '')
         self.instORsetNameKw  = AFXStringKeyword(self.cmd, 'instORsetName', True, 'BONE')
         self.CTsliceDirKw     = AFXStringKeyword(self.cmd, 'CTsliceDir', True, '')
         self.resetCTOriginKw  = AFXBoolKeyword(self.cmd,   'resetCTOrigin', AFXBoolKeyword.TRUE_FALSE, True,False)
         self.filenameKw       = AFXStringKeyword(self.cmd, 'outfilename', True, 'HUvalues')
         self.writeOdbOutputKw = AFXBoolKeyword(self.cmd,   'writeOdbOutput', AFXBoolKeyword.TRUE_FALSE, True, True)
-
+            
+        self.modelList   = None
+        self.elementSets = None
+        self.m = None
+    
+    def getModelList(self):
+        self.modelList = mdb.models.keys()
+    
+    def getModel(self):
+        self.m = mdb.models.values()[0]
+    
+    def setModel(self,modelName):
+        self.m = mdb.models[modelName]
+    
+    def getElementSetList(self):
+        if self.m==None: return None
+        self.elementSets=[]
+        for setName,set in self.m.rootAssembly.allSets.items():
+            if len(set.elements)>0:
+                self.elementSets.append(setName)
+        # Add the part instances
+        for instName in self.m.rootAssembly.instances.keys():
+            self.elementSets.append('.'.join([instName,'ALL'])) 
+        self.elementSets.sort()
+        return
+    
     def getFirstDialog(self):
+        self.getModel()
+        self.getModelList()
+        self.getElementSetList()
         import bonemapyDB
         return bonemapyDB.BonemapyDB(self)
-                
+    
+            
     def doCustomChecks(self):
     
         """Perform quick checks here. More extensive checks are performed by the kernel"""

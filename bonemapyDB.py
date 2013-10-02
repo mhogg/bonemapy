@@ -20,7 +20,22 @@ class BonemapyDB(AFXDataDialog):
         
         okBtn = self.getActionButton(self.ID_CLICKED_OK)
         okBtn.setText('OK')
-            
+        
+        # Select model
+        GroupBox_0 = FXGroupBox(p=self, text='Select model', opts=FRAME_GROOVE|LAYOUT_FILL_X)
+        VAligner_0 = AFXVerticalAligner(p=GroupBox_0, opts=0, x=0, y=0, w=0, h=0, pl=0, pr=0, pt=0, pb=0)
+        ComboBox_1 = AFXComboBox(p=VAligner_0, ncols=45, nvis=1, text='Models:', tgt=form.modelNameKw, sel=0, pt=5, pb=5)    
+        for modelName in self.form.modelList:
+            ComboBox_1.appendItem(modelName)
+        self.form.modelNameKw.setValue(self.form.modelList[0])
+        ComboBox_1.setMaxVisible(10)
+        self.modelName = self.form.modelList[0]
+        
+        # Select region
+        self.ComboBox_2 = AFXComboBox(p=VAligner_0, ncols=45, nvis=1, text='Select region:   ', tgt=form.regionNameKw, sel=0, pt=5, pb=5)    
+        self.ComboBox_2.setMaxVisible(10)      
+        self.populateElementListComboBox()        
+
         # Region selection
         GroupBox_1 = FXGroupBox(p=self, text='Select region', opts=FRAME_GROOVE|LAYOUT_FILL_X)
         FXRadioButton(p=GroupBox_1, text='Assembly set',  tgt=form.instORsetKw1, sel=1)
@@ -47,13 +62,28 @@ class BonemapyDB(AFXDataDialog):
         AFXTextField(p=GroupBox_3,  ncols=30, labelText='Name of output file of HU values: ', tgt=form.filenameKw, sel=0)
         FXCheckButton(p=GroupBox_3, text='Write odb output to visualise mapped HU values', tgt=form.writeOdbOutputKw, sel=0)
         
+    def populateElementListComboBox(self):
+        self.ComboBox_2.clearItems()
+        for elementSet in self.form.elementSets:
+            self.ComboBox_2.appendItem(elementSet)
+        self.form.regionNameKw.setValue(self.form.elementSets[0])
+
     def processUpdates(self):
+    
         # When radioButton selection changes, update labels and corresponding keywords 
         value = self.form.instORsetKw1.getValue()
         if   value==1: self.lab1.setText('Name of assembly set:') 
         elif value==2: self.lab1.setText('Name of part instance:') 
         name  = self.form.radioButtonGroups.keys()[0]
         self.form.instORsetKw2.setValue(self.form.radioButtonGroups[name][2][value])  
+    
+        # If model name changes, the re-populate the region list
+        if self.form.modelNameKw.getValue() != self.modelName:
+            self.modelName = self.form.modelNameKw.getValue()
+            self.form.setModel(self.modelName)
+            self.form.getElementSetList()
+            self.populateElementListComboBox()
+    
         return          
 
 class BonemapyDBDirHandler(FXObject):
