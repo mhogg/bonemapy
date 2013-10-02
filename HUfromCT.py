@@ -189,10 +189,11 @@ def getHUfromCT(CTsliceDir,resetCTOrigin,bbox):
     ziLow = z.searchsorted(minz)-1
     ziUpp = z.searchsorted(maxz)+1
     z     = z[ziLow:ziUpp]
+    fileList  = fileList[ziLow:ziUpp]
     numSlices = z.shape[0]
     CTvals = np.zeros((numSlices,cols,rows),dtype=np.int16)
     for i in xrange(numSlices):
-        fileName = fileList[ziLow+i]
+        fileName = fileList[i]
         ds = dicom.read_file(fileName)
         CTvals[i] = ds.pixel_array
         ds.clear()
