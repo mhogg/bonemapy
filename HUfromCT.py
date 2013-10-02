@@ -140,7 +140,7 @@ def getModelData(instORset,instORsetName):
 
 # ~~~~~~~~~~
 
-def getHUfromCT(CTsliceDir,resetCTOrigin):   
+def getHUfromCT(CTsliceDir,resetCTOrigin,bbox):   
     
     """Loads CT stack into numpy array and creates an interpolation function"""
     
@@ -188,10 +188,11 @@ def getHUfromCT(CTsliceDir,resetCTOrigin):
     # Load the CT slices into a numpy array. Only load the CT slices that are required
     ziLow = z.searchsorted(minz)-1
     ziUpp = z.searchsorted(maxz)+1
-    numSlices = z[ziLow:ziUpp].shape[0]
+    z     = z[ziLow:ziUpp]
+    numSlices = z.shape[0]
     CTvals = np.zeros((numSlices,cols,rows),dtype=np.int16)
-    for i in xrange(ziLow,ziUpp):
-        fileName = fileList[i]
+    for i in xrange(numSlices):
+        fileName = fileList[ziLow+i]
         ds = dicom.read_file(fileName)
         CTvals[i] = ds.pixel_array
         ds.clear()
