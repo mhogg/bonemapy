@@ -22,7 +22,7 @@ class BonemapyDB(AFXDataDialog):
         okBtn.setText('OK')
         
         # Select model
-        GroupBox_1 = FXGroupBox(p=self, text='Select region', opts=FRAME_GROOVE|LAYOUT_FILL_X)
+        GroupBox_1 = FXGroupBox(p=self, text='Select bone region', opts=FRAME_GROOVE|LAYOUT_FILL_X)
         VAligner_1 = AFXVerticalAligner(p=GroupBox_1, opts=0, x=0, y=0, w=0, h=0, pl=0, pr=0, pt=0, pb=0)
         ComboBox_1 = AFXComboBox(p=VAligner_1, ncols=45, nvis=1, text='Region model: ', tgt=form.modelNameKw, sel=0, pt=5, pb=5)    
         for modelName in self.form.modelList:
