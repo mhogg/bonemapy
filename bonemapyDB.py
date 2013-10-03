@@ -67,8 +67,7 @@ class BonemapyDB(AFXDataDialog):
             self.modelName = self.form.modelNameKw.getValue()
             self.form.setModel(self.modelName)
             self.form.getElementSetList()
-            self.populateElementListComboBox()
-        return          
+            self.populateElementListComboBox()  
 
 class BonemapyDBDirHandler(FXObject):
 

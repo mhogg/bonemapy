@@ -48,7 +48,6 @@ class Bonemapy_plugin(AFXForm):
             if len(inst.elements)>0:
                 self.elementSets.append('.'.join([instName,'ALL'])) 
         self.elementSets.sort()
-        return
     
     def getFirstDialog(self):
         self.getModelList()
