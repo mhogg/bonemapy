@@ -4,4 +4,4 @@
 
 # This file is part of bonemapy - See LICENSE.txt for information on usage and redistribution
 
-__version__ = '0.2.2'
+__version__ = '0.3.0'
