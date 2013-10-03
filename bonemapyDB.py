@@ -15,16 +15,16 @@ class BonemapyDB(AFXDataDialog):
 
     def __init__(self, form):
 
-        AFXDataDialog.__init__(self, form, 'Map HU values',self.OK|self.CANCEL, DIALOG_ACTIONS_SEPARATOR)
+        AFXDataDialog.__init__(self, form, 'bonemapy - Map HU values',self.OK|self.CANCEL, DIALOG_ACTIONS_SEPARATOR)
         self.form = form
         
         okBtn = self.getActionButton(self.ID_CLICKED_OK)
         okBtn.setText('OK')
         
         # Select model
-        GroupBox_0 = FXGroupBox(p=self, text='Select region', opts=FRAME_GROOVE|LAYOUT_FILL_X)
-        VAligner_0 = AFXVerticalAligner(p=GroupBox_0, opts=0, x=0, y=0, w=0, h=0, pl=0, pr=0, pt=0, pb=0)
-        ComboBox_1 = AFXComboBox(p=VAligner_0, ncols=45, nvis=1, text='Model:', tgt=form.modelNameKw, sel=0, pt=5, pb=5)    
+        GroupBox_1 = FXGroupBox(p=self, text='Select region', opts=FRAME_GROOVE|LAYOUT_FILL_X)
+        VAligner_1 = AFXVerticalAligner(p=GroupBox_1, opts=0, x=0, y=0, w=0, h=0, pl=0, pr=0, pt=0, pb=0)
+        ComboBox_1 = AFXComboBox(p=VAligner_1, ncols=45, nvis=1, text='Region model: ', tgt=form.modelNameKw, sel=0, pt=5, pb=5)    
         for modelName in self.form.modelList:
             ComboBox_1.appendItem(modelName)
         self.form.modelNameKw.setValue(self.form.modelList[0])
@@ -32,18 +32,9 @@ class BonemapyDB(AFXDataDialog):
         self.modelName = self.form.modelList[0]
         
         # Select region
-        self.ComboBox_2 = AFXComboBox(p=VAligner_0, ncols=45, nvis=1, text='Select region:   ', tgt=form.regionNameKw, sel=0, pt=5, pb=5)    
+        self.ComboBox_2 = AFXComboBox(p=VAligner_1, ncols=45, nvis=1, text='Region set:', tgt=form.regionSetNameKw, sel=0, pt=5, pb=5)    
         self.ComboBox_2.setMaxVisible(10)      
         self.populateElementListComboBox()        
-
-        # Region selection
-        #GroupBox_1 = FXGroupBox(p=self, text='Select region', opts=FRAME_GROOVE|LAYOUT_FILL_X)
-        #FXRadioButton(p=GroupBox_1, text='Assembly set',  tgt=form.instORsetKw1, sel=1)
-        #FXRadioButton(p=GroupBox_1, text='Part instance', tgt=form.instORsetKw1, sel=2)
-        #fileTextHf1 = FXHorizontalFrame(p=GroupBox_1, opts=0, x=0, y=0, w=0, h=0, pl=0, pr=0, pt=0, pb=0, hs=0, vs=0)
-        #self.lab1   = FXLabel(p=fileTextHf1, text='', ic=None, opts=JUSTIFY_LEFT|LAYOUT_FIX_WIDTH, x=0, y=0, w=130, h=0, 
-        #                      pl=DEFAULT_PAD, pr=DEFAULT_PAD, pt=DEFAULT_PAD, pb=DEFAULT_PAD)
-        #self.tf1    = AFXTextField(p=fileTextHf1, ncols=0, labelText='', tgt=form.instORsetNameKw, sel=0, opts=AFXTEXTFIELD_STRING|LAYOUT_FIX_WIDTH, w=245)
         
         # CT slice directory
         GroupBox_2  = FXGroupBox(p=self, text='CT slice directory', opts=FRAME_GROOVE|LAYOUT_FILL_X)
@@ -63,28 +54,20 @@ class BonemapyDB(AFXDataDialog):
         FXCheckButton(p=GroupBox_3, text='Write odb output to visualise mapped HU values', tgt=form.writeOdbOutputKw, sel=0)
         
     def populateElementListComboBox(self):
+        """Populate comboBox  containing element sets"""
         if len(self.form.elementSets)==0: return
         self.ComboBox_2.clearItems()
         for elementSet in self.form.elementSets:
             self.ComboBox_2.appendItem(elementSet)
-        self.form.regionNameKw.setValue(self.form.elementSets[0])
+        self.form.regionSetNameKw.setValue(self.form.elementSets[0])
 
     def processUpdates(self):
-    
-        # When radioButton selection changes, update labels and corresponding keywords 
-        #value = self.form.instORsetKw1.getValue()
-        #if   value==1: self.lab1.setText('Name of assembly set:') 
-        #elif value==2: self.lab1.setText('Name of part instance:') 
-        #name  = self.form.radioButtonGroups.keys()[0]
-        #self.form.instORsetKw2.setValue(self.form.radioButtonGroups[name][2][value])  
-    
         # If model name changes, the re-populate the region list
         if self.form.modelNameKw.getValue() != self.modelName:
             self.modelName = self.form.modelNameKw.getValue()
             self.form.setModel(self.modelName)
             self.form.getElementSetList()
             self.populateElementListComboBox()
-    
         return          
 
 class BonemapyDBDirHandler(FXObject):

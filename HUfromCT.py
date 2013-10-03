@@ -19,15 +19,14 @@ except: pass
 
 # ~~~~~~~~~~ 
 
-def getElements(m,instORset,instORsetName):
+def getElements(m,regionSetName):
     
     """Get element type and number of nodes per element"""
         
     # Get elements
-    if instORset=='Part instance':
-        elements = m.rootAssembly.instances[instORsetName].elements
-    elif instORset=='Assembly set':
-        elements = m.rootAssembly.allSets[instORsetName].elements
+    region,setName = parseRegionSetName(regionSetName)
+    if setName=='ALL': elements = m.rootAssembly.instances[region].elements
+    else:              elements = m.rootAssembly.allSets[regionSetName].elements
     
     # Get part information: (1) instance names, (2) element types and (3) number of each element type 
     partInfo={}
@@ -48,27 +47,24 @@ def getElements(m,instORset,instORsetName):
         if not any([True for seType in et.seTypes.keys() if seType==eType]):
             usTypes.append(str(eType))
     if len(usTypes)>0:
-        if len(usTypes)==1: strvars = ('',usTypes[0],instORset,instORsetName,'is')
-        else:               strvars = ('s',', '.join(usTypes),instORset,instORsetName,'are') 
-        print '\nElement type%s %s in %s %s %s not supported' % strvars
+        if len(usTypes)==1: strvars = ('',usTypes[0],regionSetName,'is')
+        else:               strvars = ('s',', '.join(usTypes),regionSetName,'are') 
+        print '\nElement type%s %s in region %s %s not supported' % strvars
         return None
     
     return partInfo, elements
        
 # ~~~~~~~~~~      
 
-def getModelData(instORset,instORsetName):
+def getModelData(modelName,regionSetName):
 
     """Get the node, element and int pnt data from the supplied part instance/assembly set"""
 
-    # Get model - Must be displayed in current viewport
-    vpn = session.currentViewportName
-    displayed = session.viewports[vpn].displayedObject
-    mName = displayed.modelName
-    m = mdb.models[mName]
+    # Get model
+    m = mdb.models[modelName]
     
     # Get elements and part info
-    result = getElements(m,instORset,instORsetName)
+    result = getElements(m,regionSetName)
     if result==None: return None
     else:
         partInfo, elements = result
@@ -230,7 +226,6 @@ def mapHUtoMesh(ipData,interp):
     for i in xrange(numPoints):
         xc,yc,zc = ipData[i]['coord'] 
         ipData[i]['HUval'] = interp(xc,yc,zc) 
-    
     return ipData
 
 # ~~~~~~~~~~
@@ -299,7 +294,7 @@ def createPartInstanceInOdb(odb,instName,instNodes,instElems):
 
 # ~~~~~~~~~~
 
-def writeOdb(nodeData,elemData,ipData,instORset,instORsetName,outfilename):
+def writeOdb(nodeData,elemData,ipData,regionSetName,outfilename):
     """
     Creates an odb from the specified assembly set / part instance. Then
     creates a frame and a fieldoutput corresponding to the mapped HU values
@@ -317,8 +312,9 @@ def writeOdb(nodeData,elemData,ipData,instORset,instORsetName,outfilename):
         createPartInstanceInOdb(odb,instName,nodeData[instName],elemData[instName])
     
     # Create an element set for the part instance / assembly set. This is required 
-    # for use with the pyvXRAY plug-in   
-    if instORset=='Assembly set':
+    # for use with the pyvXRAY plug-in  
+    region,setName = parseRegionSetName(regionSetName)
+    if region=='Assembly':
         elabels=[]
         for instName in elemData.keys():
             el=np.array([],dtype=int)
@@ -326,13 +322,13 @@ def writeOdb(nodeData,elemData,ipData,instORset,instORsetName,outfilename):
                 el = np.concatenate((el,edata['label']))
             el.sort()
             elabels.append([instName,el])
-        odb.rootAssembly.ElementSetFromElementLabels(name=instORsetName,elementLabels=elabels)  
-    elif instORset=='Part instance':
+        odb.rootAssembly.ElementSetFromElementLabels(name=setName,elementLabels=elabels)          
+    else:
         el=np.array([],dtype=int)
-        for edata in elemData[instORsetName].values():
+        for edata in elemData[region].values():
             el = np.concatenate((el,edata['label']))
         el.sort()
-        odb.parts[instORsetName].ElementSetFromElementLabels(name='ALL',elementLabels=el)
+        odb.rootAssembly.instances[region].ElementSetFromElementLabels(name=setName,elementLabels=el)    
     
     # Create fieldOutput to visualise mapped HU values
     fo = frame.FieldOutput(name='HU',description='Mapped HU values',type=SCALAR)
@@ -355,7 +351,15 @@ def writeOdb(nodeData,elemData,ipData,instORset,instORsetName,outfilename):
 
 # ~~~~~~~~~~
 
-def getHU(instORset, instORsetName, CTsliceDir, outfilename, resetCTOrigin, writeOdbOutput):
+def parseRegionSetName(regionSetName):
+    """ Get region and setName from regionSetName """ 
+    if '.' in regionSetName: region,setName = regionSetName.split('.')
+    else:                 region,setName = 'Assembly',regionSetName   
+    return region,setName
+
+# ~~~~~~~~~~
+
+def getHU(modelName, regionSetName, CTsliceDir, outfilename, resetCTOrigin, writeOdbOutput):
     """
     For the specified assembly set or part instance, gets the integration point coordinates
     for all the elements and maps the HU values from the corresponding CT stack to these
@@ -369,7 +373,7 @@ def getHU(instORset, instORsetName, CTsliceDir, outfilename, resetCTOrigin, writ
     
     # Get model data
     print '\nExtracting model data'
-    result = getModelData(instORset,instORsetName)
+    result = getModelData(modelName,regionSetName)
     if result is None:
         print '\nError in getModelData. Exiting'
         return
@@ -404,7 +408,7 @@ def getHU(instORset, instORsetName, CTsliceDir, outfilename, resetCTOrigin, writ
     # Write odb file to check HU values have been calculated correctly
     if writeOdbOutput:
         print '\nCreating odb file for checking of mapped HU values'
-        result = writeOdb(nodeData,elemData,ipData,instORset,instORsetName,outfilename)
+        result = writeOdb(nodeData,elemData,ipData,regionSetName,outfilename)
         if result is None:
             print '\nError in writeOdbOutput. Exiting'
             return
