@@ -6,7 +6,7 @@
 
 from abaqusGui import *
 from abaqusConstants import ALL
-from kernelAccess import session, mdb
+from kernelAccess import mdb
 import os
 from bonemapy_version import __version__
 
@@ -32,9 +32,11 @@ class Bonemapy_plugin(AFXForm):
         self.modelList = mdb.models.keys()
     
     def getFirstModel(self):
-        if self.modelList==None: return
-        self.m = mdb.models[self.modelList[0]]
-    
+        if self.modelList==None or len(self.modelList)==0: return
+        self.m = mdb.models[self.modelList[0]]        
+        try:    self.m.rootAssembly
+        except: self.m = None
+
     def setModel(self,modelName):
         self.m = mdb.models[modelName]
     
@@ -93,7 +95,7 @@ class Bonemapy_plugin(AFXForm):
             return False
         
         # Check for numpy
-        try: import numpy
+        try: import numpy as np
         except: 
             showAFXErrorDialog( self.getCurrentDialog(), 'Error: Required module numpy cannot be found')
             return False

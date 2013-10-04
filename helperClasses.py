@@ -30,16 +30,16 @@ class triLinearInterp():
         self.N[6] = (1.0-t)*u*v
         self.N[7] = t*u*v 
         
-    def findPointData(self,x,xc):
+    def interp1D(self,x,xc):
         xh = x.searchsorted(xc)
         xl = xh-1               
         xiso = (xc-x[xl])/(x[xh]-x[xl])
         return xl,xh,xiso                   
         
     def interp(self,xc,yc,zc):
-        xl,xh,t = self.findPointData(self.x,xc)
-        yl,yh,u = self.findPointData(self.y,yc)
-        zl,zh,v = self.findPointData(self.z,zc)
+        xl,xh,t = self.interp1D(self.x,xc)
+        yl,yh,u = self.interp1D(self.y,yc)
+        zl,zh,v = self.interp1D(self.z,zc)
         self.nv[:] = self.f[xl:xh+1,yl:yh+1,zl:zh+1].flatten()   
         self.evalN(t,u,v)
         return np.dot(self.N,self.nv)
