@@ -8,7 +8,7 @@ from abaqusGui import *
 from abaqusConstants import ALL
 from kernelAccess import mdb
 import os
-from bonemapy_version import __version__
+from bonemapy_version import version as __version__
 
 class Bonemapy_plugin(AFXForm):
 
