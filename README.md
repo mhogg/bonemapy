@@ -44,7 +44,7 @@ The recommended method is:
 
 * Download the zip file of the latest bonemapy release
 * Unzip the folder to a convenient location. This folder will typically be called `bonemapy-x.x.x`
-* Copy this folder to the `abaqus_plugins` directory within your ABAQUS installation. This is in a different location depending on the ABAQUS version. 
+* Copy the `bonemapy` sub-folder to the `abaqus_plugins` directory within your ABAQUS installation. This is in a different location depending on the ABAQUS version. 
   For the default ABAQUS installation location, possible locations are:
 
     v6.11-x: `C:\SIMULIA\Abaqus\6.11-x\abaqus_plugins`
