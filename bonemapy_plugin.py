@@ -33,7 +33,7 @@ class Bonemapy_plugin(AFXForm):
     
     def getFirstModel(self):
         if self.modelList==None or len(self.modelList)==0: return
-        self.m = mdb.models[self.modelList[0]]        
+        self.setModel(self.modelList[0])       
         try:    self.m.rootAssembly
         except: self.m = None
 

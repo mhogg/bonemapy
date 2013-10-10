@@ -81,7 +81,7 @@ class BonemapyDBDirHandler(FXObject):
         FXMAPFUNC(self, SEL_COMMAND, AFXMode.ID_ACTIVATE, BonemapyDBDirHandler.activate)
 
     def activate(self, sender, sel, ptr):
-       fileDb = AFXFileSelectorDialog(getAFXApp().getAFXMainWindow(), 'Select a Directory', self.fileNameKw, self.readOnlyKw,
+       fileDb = AFXFileSelectorDialog(getAFXApp().getAFXMainWindow(), 'Select the CT directory', self.fileNameKw, self.readOnlyKw,
                                       AFXSELECTFILE_DIRECTORY, self.patterns, self.patternTgt)
        fileDb.create()
        fileDb.showModal()
