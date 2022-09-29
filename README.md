@@ -50,7 +50,7 @@ Please note that:
 
   To facilitate the installation of 3rd party libraries, the first thing to do is to install `setuptools` and `pip`. Choose the versions that were released around July 2019, which corresponds to the build date of the Python in Abaqus 2021.
 
-  1. Download `setuptools` and `pip` from [PyPi](pypi.org)
+  1. Download `setuptools` and `pip` from [PyPi](http://pypi.org)
 
   The files to download are:
 
