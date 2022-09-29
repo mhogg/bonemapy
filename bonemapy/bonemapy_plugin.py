@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 
-# Copyright (C) 2013 Michael Hogg
+# Copyright (C) 2022 Michael Hogg
 
 # This file is part of bonemapy - See LICENSE.txt for information on usage and redistribution
 
@@ -101,7 +101,7 @@ class Bonemapy_plugin(AFXForm):
             return False
             
         # Check for pydicom
-        try: import dicom
+        try: import pydicom
         except: 
             showAFXErrorDialog( self.getCurrentDialog(), 'Error: Required module pydicom cannot be found')
             return False      
@@ -115,7 +115,7 @@ desc  = 'An ABAQUS plugin used to extract bone properties from CT scans for use 
 desc += 'Uses tri-linear interpolation to map the HU values from the CT scans to the integration point coordinates of the '
 desc += 'mesh elements, as required for simulations that use ABAQUS subroutines such as USDFLD or UMAT to apply the bone properties.\n\n'
 desc += 'Requires that an ABAQUS model be open in the current viewport. Currently only accepts bone models meshed with tetrahedral '
-desc += 'elements (ABAQUS element types C3D4, C3D4H, C3D10, C3D10H, C3D10I, C3D10M and C3D10MH are all supported).\n'
+desc += 'elements (ABAQUS element types C3D4, C3D4H, C3D10, C3D10H, C3D10M and C3D10MH are all supported).\n'
 
 toolset = getAFXApp().getAFXMainWindow().getPluginToolset()
 toolset.registerGuiMenuButton(

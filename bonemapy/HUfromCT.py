@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 
-# Copyright (C) 2013 Michael Hogg
+# Copyright (C) 2022 Michael Hogg
 
 # This file is part of bonemapy - See LICENSE.txt for information on usage and redistribution
 
@@ -14,7 +14,7 @@ import helperClasses as hc
 # Use try to prevent error importing missing modules when bonemapy plug-in is launched
 try:
     import numpy as np
-    import dicom
+    import pydicom
 except: pass
 
 # ~~~~~~~~~~ 
@@ -151,7 +151,7 @@ def getHUfromCT(CTsliceDir,resetCTOrigin,bbox):
     z = np.zeros(numFiles,dtype=float)
     for i in xrange(numFiles):
         fileName = fileList[i]
-        try: ds = dicom.read_file(fileName)
+        try: ds = pydicom.read_file(fileName)
         except: 
             print '\nCannot open CT slice file %s. Check that this is a valid dicom file' % fileName
             return None
@@ -190,7 +190,7 @@ def getHUfromCT(CTsliceDir,resetCTOrigin,bbox):
     CTvals = np.zeros((numSlices,cols,rows),dtype=np.int16)
     for i in xrange(numSlices):
         fileName = fileList[i]
-        ds = dicom.read_file(fileName)
+        ds = pydicom.read_file(fileName)
         CTvals[i] = ds.pixel_array
         ds.clear()
 
