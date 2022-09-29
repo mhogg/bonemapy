@@ -81,7 +81,7 @@ bonemapy is an ABAQUS plug-in. To install any ABAQUS plug-in, the plug-in folder
 
 To install bonemapy into ABAQUS:
 
-1. Download the latest bonemapy zip file from the [releases page](https://github.com/mhogg/bonemapy/releases)
+1. Download the latest bonemapy zip file from the [releases page](https://github.com/mhogg/bonemapy/releases) or from [PyPi](https://pypi.org/project/bonemapy/)
 
 2. Unzip the folder to a convenient location. This folder will typically be called `bonemapy-x.x.x`
 
