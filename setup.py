@@ -15,6 +15,7 @@ setup(
     keywords = ["ABAQUS", "plug-in","CT","finite","element","bone","properties","python"],
     author = 'Michael Hogg',
     author_email = 'michael.christopher.hogg@gmail.com',
+    packages=['bonemapy'],
     url = "https://github.com/mhogg/bonemapy",
     download_url = "https://github.com/mhogg/bonemapy/releases",
     classifiers = [
