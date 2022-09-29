@@ -6,16 +6,30 @@
 
 import bonemapy
 from distutils.core import setup
+from os import path
+
+# Get current path
+here = path.abspath(path.dirname(__file__))
+
+# Function to open the readme file
+def readme():
+    with open(path.join(here, 'README.md')) as f:
+        return f.read()
+long_description = readme()
 
 setup(
     name = 'bonemapy',
     version = bonemapy.__version__,
     description = 'An ABAQUS plug-in to map bone properties from CT scans to 3D finite element bone/implant models',
+    long_description = long_description,
+    long_description_content_type='text/markdown',
     license = 'MIT license',
     keywords = ["ABAQUS", "plug-in","CT","finite","element","bone","properties","python"],
     author = 'Michael Hogg',
     author_email = 'michael.christopher.hogg@gmail.com',
-    packages=['bonemapy'],
+    packages=['', 'bonemapy'],
+    package_data = {'': ['README.md','LICENSE.txt'], 'bonemapy': ['icons\*']},
+    include_package_data = True,
     url = "https://github.com/mhogg/bonemapy",
     download_url = "https://github.com/mhogg/bonemapy/releases",
     classifiers = [
@@ -31,15 +45,4 @@ setup(
         "Topic :: Scientific/Engineering :: Medical Science Apps.",
         "Topic :: Scientific/Engineering :: Visualization",
         ],
-    long_description = """
-
-bonemapy is an ABAQUS plug-in that is used to extract bone density, or Hounsfield Unit (HU) values, from CT scans. The bone density can then be used to setup heterogeneous
-material properties for a 3D finite element bone/implant model.
-
-The HU values are extracted at the element integration points. Tri-linear interpolation is used to calculate the HU values at the location of the integration points.
-
-bonemapy produces a text file containing the HU values that is formatted so that it can easily be read using ABAQUS user subroutines that are required to apply the bone properties. An
-ABAQUS odb file is also created containing a fieldoutput representing HU so that the user can quickly visualise the mapped HU values.
-
-""",
 )

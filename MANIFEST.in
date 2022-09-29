@@ -1,7 +1,0 @@
-include *.in
-include *.txt
-include *.md
-include *.py
-recursive-include bonemapy/icons *
-
-
