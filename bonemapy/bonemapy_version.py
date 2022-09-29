@@ -1,9 +1,9 @@
 # -*- coding: utf-8 -*-
 
-# Copyright (C) 2013 Michael Hogg
+# Copyright (C) 2022 Michael Hogg
 
 # This file is part of bonemapy - See LICENSE.txt for information on usage and redistribution
 
 # Version and date
-version     = '0.4.1'
-releasedate = '2013-10-13'
+version     = '0.5.0'
+releasedate = '2022-09-29'
