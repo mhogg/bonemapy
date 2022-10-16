@@ -15,32 +15,33 @@ import helperClasses as hc
 try:
     import numpy as np
     import pydicom
-except: pass
+except:
+    print 'Error importing required modules'
 
-# ~~~~~~~~~~ 
+# ~~~~~~~~~~
 
 def getElements(m,regionSetName):
-    
+
     """Get element type and number of nodes per element"""
-        
+
     # Get elements
     region,setName = parseRegionSetName(regionSetName)
     if setName=='ALL': elements = m.rootAssembly.instances[region].elements
     else:              elements = m.rootAssembly.allSets[regionSetName].elements
-    
-    # Get part information: (1) instance names, (2) element types and (3) number of each element type 
+
+    # Get part information: (1) instance names, (2) element types and (3) number of each element type
     partInfo={}
-    for e in elements: 
+    for e in elements:
         if not partInfo.has_key(e.instanceName): partInfo[e.instanceName]={}
         if not partInfo[e.instanceName].has_key(e.type): partInfo[e.instanceName][e.type]=0
-        partInfo[e.instanceName][e.type]+=1  
-        
+        partInfo[e.instanceName][e.type]+=1
+
     # Put all element types from all part instances in a list
     eTypes = []
     for k1 in partInfo.keys():
         for k2 in partInfo[k1].keys(): eTypes.append(k2)
     eTypes = dict.fromkeys(eTypes,1).keys()
-        
+
     # Check that elements are supported
     usTypes=[]
     for eType in eTypes:
@@ -48,13 +49,13 @@ def getElements(m,regionSetName):
             usTypes.append(str(eType))
     if len(usTypes)>0:
         if len(usTypes)==1: strvars = ('',usTypes[0],regionSetName,'is')
-        else:               strvars = ('s',', '.join(usTypes),regionSetName,'are') 
+        else:               strvars = ('s',', '.join(usTypes),regionSetName,'are')
         print '\nElement type%s %s in region %s %s not supported' % strvars
         return None
-    
+
     return partInfo, elements
-       
-# ~~~~~~~~~~      
+
+# ~~~~~~~~~~
 
 def getModelData(modelName,regionSetName):
 
@@ -62,7 +63,7 @@ def getModelData(modelName,regionSetName):
 
     # Get model
     m = mdb.models[modelName]
-    
+
     # Get elements and part info
     result = getElements(m,regionSetName)
     if result==None: return None
@@ -70,13 +71,13 @@ def getModelData(modelName,regionSetName):
         partInfo, elements = result
         numElems = len(elements)
         ec = dict([(ename,eclass()) for ename,eclass in et.seTypes.items()])
-               
+
     # Get total number of integration points
     numIntPts = 0
     for instName in partInfo.keys():
         for etype,ecount in partInfo[instName].items():
-            numIntPts += ec[etype].numIntPnts * ecount 
-    
+            numIntPts += ec[etype].numIntPnts * ecount
+
     # Get node data
     nodeData={}
     for instName in partInfo.keys():
@@ -87,19 +88,19 @@ def getModelData(modelName,regionSetName):
             node = instNodes[n]
             nodeData[instName][n] = (node.label,node.coordinates)
 
-    # Create empty dictionary,array to store element data 
+    # Create empty dictionary,array to store element data
     elemData = copy.deepcopy(partInfo)
     for instName in elemData.keys():
         for k,v in elemData[instName].items():
             elemData[instName][k] = np.zeros(v,dtype=[('label','|i4'),('econn','|i4',(ec[k].numNodes,))])
-    eCount = dict([(k1,dict([k2,0] for k2 in partInfo[k1].keys())) for k1 in partInfo.keys()]) 
+    eCount = dict([(k1,dict([k2,0] for k2 in partInfo[k1].keys())) for k1 in partInfo.keys()])
 
     # Create empty array to store int pnt data
-    ipData = np.zeros(numIntPts,dtype=[('iname','|a80'),('label','|i4'),('ipnum','|i4'),('coord','|f4',(3,)),('HUval','|f4')])   
+    ipData = np.zeros(numIntPts,dtype=[('iname','|a80'),('label','|i4'),('ipnum','|i4'),('coord','|f4',(3,)),('HUval','|f4')])
 
-    # Calculate integration point coordinates from nodal coordinates using element 
+    # Calculate integration point coordinates from nodal coordinates using element
     # interpolation function. Also get element data
-    ilow = 0    
+    ilow = 0
     for e in xrange(numElems):
 
         # Get element data
@@ -113,74 +114,85 @@ def getModelData(modelName,regionSetName):
         nodeCoords = nodeData[eInstName]['coord'][list(eConn)]
         ipCoords   = eClass.getIntPointValues(nodeCoords)
         nip        = eClass.numIntPnts
-        
+
         # Store int pnt data
         iupp = ilow + nip
         ipData['iname'][ilow:iupp] = eInstName
         ipData['label'][ilow:iupp] = elem.label
-        ipData['ipnum'][ilow:iupp] = eClass.ipnums 
+        ipData['ipnum'][ilow:iupp] = eClass.ipnums
         ipData['coord'][ilow:iupp] = ipCoords
-        ilow = iupp 
-        
+        ilow = iupp
+
         # Store element label and connectivity
         eIndex = eCount[eInstName][eType]
         elemData[eInstName][eType][eIndex] = (elem.label,eConn)
-        eCount[eInstName][eType] +=1  
-        
+        eCount[eInstName][eType] +=1
+
     # Get bounding box for int pnt data
     minx,miny,minz = np.min(ipData['coord'],axis=0)
     maxx,maxy,maxz = np.max(ipData['coord'],axis=0)
     bbox = [[minx,miny,minz],[maxx,maxy,maxz]]
-        
+
     return nodeData,elemData,ipData,bbox
 
 # ~~~~~~~~~~
 
-def getHUfromCT(CTsliceDir,resetCTOrigin,bbox):   
-    
+def getHUfromCT(CTsliceDir,resetCTOrigin,bbox):
+
     """Loads CT stack into numpy array and creates an interpolation function"""
-    
-    # Get list of CT slice files    
+
+    # Get list of CT slice files
     fileList = os.listdir(CTsliceDir)
-    fileList = [os.path.join(CTsliceDir,fileName) for fileName in fileList] 
-    numFiles = len(fileList)       
+    fileList = [os.path.join(CTsliceDir,fileName) for fileName in fileList]
+    numFiles = len(fileList)
 
     # Get the z coordinates of each slice. All slices should have the (x,y) origin coordinates
-    # Put the zcoord and filename into a numpy array. Then sort by zcoord to ensure that the 
+    # Put the zcoord and filename into a numpy array. Then sort by zcoord to ensure that the
     # list of filenames is sorted correctly
     z = np.zeros(numFiles,dtype=float)
     for i in xrange(numFiles):
         fileName = fileList[i]
         try: ds = pydicom.read_file(fileName)
-        except: 
+        except:
             print '\nCannot open CT slice file %s. Check that this is a valid dicom file' % fileName
             return None
         if i==0:
             rows,cols = ds.Rows, ds.Columns
-            psx,psy   = ds.PixelSpacing
-            psx = float(psx); psy = float(psy)
-            ippx,ippy = ds.ImagePositionPatient[:2]
+            psx,psy = (float(v) for v in ds.PixelSpacing)
+            ipp = np.array([float(v) for v in ds.ImagePositionPatient])
+            ippx,ippy,_ = ipp
+            iop = ds.ImageOrientationPatient
         z[i] = ds.ImagePositionPatient[-1]
         ds.clear()
+
     indx = np.argsort(z)
     z = z[indx]
     fileList = np.array(fileList)[indx]
-    
+
     # If specified set CT slice origin to zero (ie. ignore CT slice origin in CT header)
     if resetCTOrigin:
         ippx=ippy=0.0
 
-    # Get the x, y coordinates of the slice pixels. The coordinates are taken at the pixel centre
-    x = np.linspace(ippx,ippx+psx*cols,cols,False)
-    y = np.linspace(ippy,ippy+psy*rows,rows,False)      
-    
+    # Get the x, y coordinates of the slice pixels
+    i_j0 = np.c_[np.linspace(0,cols,cols,False), np.ones(cols, dtype=float)]
+    j_i0 = np.c_[np.linspace(0,rows,rows,False), np.ones(rows, dtype=float)]
+    s = np.array([[psx,0],[0,psy]])
+    i = np.dot(s, i_j0.T)[0]
+    j = np.dot(s, j_i0.T)[0]
+
+    iopm = np.identity(3,dtype=float).flatten()
+    iopm[:6] = iop
+    iopm = iopm.reshape(3,3)
+    x = i + np.dot(iopm, ipp)[0]
+    y = j + np.dot(iopm, ipp)[1]
+
     # Check that the model data lies within the bounds of the CT stack
     minx,miny,minz = bbox[0]
     maxx,maxy,maxz = bbox[1]
     if ((minx<x[0] or maxx>x[-1]) or (miny<y[0] or maxy>y[-1]) or (minz<z[0] or maxz>z[-1])):
         print '\nModel outside bounds of CT stack. Model must have been moved from original position'
-        return None    
-    
+        return None
+
     # Load the CT slices into a numpy array. Only load the CT slices that are required
     ziLow = z.searchsorted(minz)-1
     ziUpp = z.searchsorted(maxz)+1
@@ -198,20 +210,20 @@ def getHUfromCT(CTsliceDir,resetCTOrigin,bbox):
     # because we are adding to CTvals by z slice, then the resulting index of CTvals is [zi,yi,xi].
     # Correct this to more typical index [xi,yi,zi] by swapping xi and zi e.g. zi,yi,xi -> xi,yi,zi
     CTvals = CTvals.swapaxes(0,2)
-    
+
     # Create instance of triLinearInterp class
-    interp = hc.triLinearInterp(x,y,z,CTvals) 
-    
+    interp = hc.triLinearInterp(x,y,z,CTvals)
+
     # User message on CT stack info
     um  = 'CT stack summary:\n'
     um += 'Number of slices = %d\n' % numSlices
-    um += 'Bot slice z coord = %.1f\n' % z[0] 
+    um += 'Bot slice z coord = %.1f\n' % z[0]
     um += 'Top slice z coord = %.1f\n' % z[-1]
     um += 'Number of rows, columns = %d, %d\n' % (rows,cols)
     um += 'Pixel size: %.3f in X, %.3f in Y\n' % (psx,psy)
-    um += 'Slice origin (x,y) = (%.1f,%.1f)\n' % (ippx,ippy)
+    um += 'Patient location (x,y) = (%.1f,%.1f)\n' % (ippx,ippy)
     print um
-    
+
     return interp
 
 # ~~~~~~~~~~
@@ -224,16 +236,16 @@ def mapHUtoMesh(ipData,interp):
     # the nearest CT slice voxels
     numPoints = ipData.size
     for i in xrange(numPoints):
-        xc,yc,zc = ipData[i]['coord'] 
-        ipData[i]['HUval'] = interp(xc,yc,zc) 
+        xc,yc,zc = ipData[i]['coord']
+        ipData[i]['HUval'] = interp(xc,yc,zc)
     return ipData
 
 # ~~~~~~~~~~
-    
+
 def writeOutput(ipData,outfilename):
 
     """ Writes the text output """
-    
+
     # Get the current working directory so we can write the results file there
     outfilename = os.path.join(os.getcwd(),outfilename+'.txt')
     file1       = open(outfilename,'w')
@@ -247,20 +259,20 @@ def writeOutput(ipData,outfilename):
         file1.write('%s %7d %2d %8.1f\n' % (instName,label,ipnum,huval))
     file1.close()
     print ('HU results written to file: %s' % (outfilename))
-   
+
     return 0
 
 # ~~~~~~~~~~
 
 def createPartInstanceInOdb(odb,instName,instNodes,instElems):
-    
+
     """Create part instance in odb from provided nodes and elements"""
-    
+
     # Create part in odb
     part = odb.Part(name=instName,embeddedSpace=THREE_D, type=DEFORMABLE_BODY)
 
-    # Get all the nodes connected to the elements (not all elements in the instance). 
-    # Also convert the connectivity from node indices to labels   
+    # Get all the nodes connected to the elements (not all elements in the instance).
+    # Also convert the connectivity from node indices to labels
     nodeIndices={};
     for etype in instElems.keys():
         numElems=len(instElems[etype])
@@ -268,28 +280,28 @@ def createPartInstanceInOdb(odb,instName,instNodes,instElems):
             connect = instElems[etype][e]['econn']
             for i in connect: nodeIndices[i]=1
             instElems[etype][e]['econn'][:] = instNodes[connect]['label']
-             
+
     # Get the node labels and node coordinates
-    nodeIndices = np.array(nodeIndices.keys(),dtype=int)   
+    nodeIndices = np.array(nodeIndices.keys(),dtype=int)
     nlabels = instNodes[nodeIndices]['label']
     ncoords = instNodes[nodeIndices]['coord']
     indx    = np.argsort(nlabels)
     nlabels = nlabels[indx]
     ncoords = ncoords[indx]
-    
+
     # Add the nodes to the part
     part.addNodes(labels=nlabels,coordinates=ncoords)
-    
+
     # Add the elements to the part
     for etype,edata in instElems.items():
         el = np.ascontiguousarray(edata['label'])
         ec = np.ascontiguousarray(edata['econn'])
         part.addElements(labels=el,connectivity=ec,type=str(etype))
-               
+
     # Create part instance
     odb.rootAssembly.Instance(name=instName,object=part)
     odb.save()
-    
+
     return 0
 
 # ~~~~~~~~~~
@@ -300,19 +312,19 @@ def writeOdb(nodeData,elemData,ipData,regionSetName,outfilename):
     creates a frame and a fieldoutput corresponding to the mapped HU values
     """
     # Create new odb file
-    odbName = outfilename+'.odb'        
+    odbName = outfilename+'.odb'
     odb     = Odb(name=odbName)
 
-    # Create step and frame in odb        
+    # Create step and frame in odb
     step  = odb.Step(name='Step-1',description='',domain=TIME,timePeriod=1.0)
     frame = step.Frame(incrementNumber=0,frameValue=0.0)
 
     # Copy all the elements and associated nodes to the odb
-    for instName in elemData.keys(): 
+    for instName in elemData.keys():
         createPartInstanceInOdb(odb,instName,nodeData[instName],elemData[instName])
-    
-    # Create an element set for the part instance / assembly set. This is required 
-    # for use with the pyvXRAY plug-in  
+
+    # Create an element set for the part instance / assembly set. This is required
+    # for use with the pyvXRAY plug-in
     region,setName = parseRegionSetName(regionSetName)
     if region=='Assembly':
         elabels=[]
@@ -322,14 +334,14 @@ def writeOdb(nodeData,elemData,ipData,regionSetName,outfilename):
                 el = np.concatenate((el,edata['label']))
             el.sort()
             elabels.append([instName,el])
-        odb.rootAssembly.ElementSetFromElementLabels(name=setName,elementLabels=elabels)          
+        odb.rootAssembly.ElementSetFromElementLabels(name=setName,elementLabels=elabels)
     else:
         el=np.array([],dtype=int)
         for edata in elemData[region].values():
             el = np.concatenate((el,edata['label']))
         el.sort()
-        odb.rootAssembly.instances[region].ElementSetFromElementLabels(name=setName,elementLabels=el)    
-    
+        odb.rootAssembly.instances[region].ElementSetFromElementLabels(name=setName,elementLabels=el)
+
     # Create fieldOutput to visualise mapped HU values
     fo = frame.FieldOutput(name='HU',description='Mapped HU values',type=SCALAR)
     for instName in elemData.keys():
@@ -339,7 +351,7 @@ def writeOdb(nodeData,elemData,ipData,regionSetName,outfilename):
         l = ipData[indices1][indices2]['label']
         d = ipData[indices1]['HUval']
         l = np.ascontiguousarray(l)
-        d = np.ascontiguousarray(d.reshape(d.size,1))    
+        d = np.ascontiguousarray(d.reshape(d.size,1))
         fo.addData(position=INTEGRATION_POINT,instance=i,labels=l,data=d)
 
     # Save and close odb
@@ -352,9 +364,9 @@ def writeOdb(nodeData,elemData,ipData,regionSetName,outfilename):
 # ~~~~~~~~~~
 
 def parseRegionSetName(regionSetName):
-    """ Get region and setName from regionSetName """ 
+    """ Get region and setName from regionSetName """
     if '.' in regionSetName: region,setName = regionSetName.split('.')
-    else:                 region,setName = 'Assembly',regionSetName   
+    else:                 region,setName = 'Assembly',regionSetName
     return region,setName
 
 # ~~~~~~~~~~
@@ -367,10 +379,10 @@ def getHU(modelName, regionSetName, CTsliceDir, outfilename, resetCTOrigin, writ
     uses ABAQUS subroutine USDFLD to apply bone properties.
 
     Also creates an odb file with a fieldoutput showing the mapped HU values for checking.
-    """ 
+    """
     # User message
     print '\nbonemapy plug-in to map HU values from CT stack to integration points of FE model'
-    
+
     # Get model data
     print '\nExtracting model data'
     result = getModelData(modelName,regionSetName)
@@ -381,16 +393,16 @@ def getHU(modelName, regionSetName, CTsliceDir, outfilename, resetCTOrigin, writ
         nodeData,elemData,ipData,bbox = result
 
     # Get HU values from the CT stack
-    print '\nGetting HU values from CT stack'   
+    print '\nGetting HU values from CT stack'
     result = getHUfromCT(CTsliceDir,resetCTOrigin,bbox)
     if result is None:
         print '\nError in getHUfromCT. Exiting'
         return
     else:
         interp = result
-        
+
     # Map HU values to the int pnts of the FE model mesh
-    print '\nMapping HU values to the int pnts of the FE model mesh'   
+    print '\nMapping HU values to the int pnts of the FE model mesh'
     result = mapHUtoMesh(ipData,interp)
     if result is None:
         print '\nError in mapHUtoMesh. Exiting'
@@ -399,12 +411,12 @@ def getHU(modelName, regionSetName, CTsliceDir, outfilename, resetCTOrigin, writ
         ipData = result
 
     # Write HU values to text file
-    print '\nWriting text output'   
+    print '\nWriting text output'
     result = writeOutput(ipData,outfilename)
     if result is None:
         print '\nError in writeOutput. Exiting'
-        return        
-    
+        return
+
     # Write odb file to check HU values have been calculated correctly
     if writeOdbOutput:
         print '\nCreating odb file for checking of mapped HU values'
@@ -412,6 +424,6 @@ def getHU(modelName, regionSetName, CTsliceDir, outfilename, resetCTOrigin, writ
         if result is None:
             print '\nError in writeOdbOutput. Exiting'
             return
-    
+
     print '\nFinished\n'
     return

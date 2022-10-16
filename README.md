@@ -36,11 +36,11 @@ Please note that:
 
 * Requires that the model coordinates match the CT scan coordinates e.g. the bone model cannot be shifted from its original position
 
-### CT stack requirements ###
+### CT stack information ###
+
+* If [Slicer3D](https://www.slicer.org/) has been used to extract the bone geometry, then the geometry should be exported with respect to the RAS coordinate system, not the LPS coordinate system which is the default.  
 
 * All CT slices should be located in the same directory. This directory must not contain any other file types or slices belonging to other stacks
-
-* It is assumed that all slices have the same (x,y) coordinates at the slice origin
 
 </br>
 
