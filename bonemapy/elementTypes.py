@@ -171,4 +171,3 @@ seTypes[C3D10]   = elementC3D10
 seTypes[C3D10H]  = elementC3D10H
 seTypes[C3D10M]  = elementC3D10M
 seTypes[C3D10MH] = elementC3D10MH
-
