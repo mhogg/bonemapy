@@ -12,7 +12,7 @@ MIT license - See LICENSE.txt for details on usage and redistribution
 
 .. raw:: html
 
-    <img src="https://github.com/mhogg/bonemapy/blob/master/images/scapula_mesh_bonedensity.png" width="900"/>
+    <img src="https://github.com/mhogg/bonemapy/blob/master/images/scapula_mesh_bonedensity.png" width="900">
     
 Figure 1: FE model of scapula showing meshed part (left) and odb results file showing applied bone properties on several slices through the part (right)
 
