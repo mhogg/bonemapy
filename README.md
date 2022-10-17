@@ -36,7 +36,7 @@ Please note that:
 
 * Requires that the model coordinates match the CT scan coordinates e.g. the bone model cannot be shifted from its original position
 
-### CT stack information ###
+### CT information ###
 
 * If [Slicer3D](https://www.slicer.org/) has been used to extract the bone geometry, then the geometry should be exported with respect to the RAS coordinate system, not the LPS coordinate system which is the default.  
 
