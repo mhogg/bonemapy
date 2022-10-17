@@ -15,7 +15,7 @@ MIT license - See LICENSE.txt for details on usage and redistribution
     :width: 90%
     
 
-Figure 1: FE model of scapula showing meshed part (left) and odb results file showing applied bone properties (right)
+Figure 1: FE model of scapula showing meshed part (left) and odb results file showing applied bone properties on several slices through the part (right)
 
 
 Requirements
