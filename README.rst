@@ -140,10 +140,10 @@ bonemapy produces the following output:
 2. An odb file of the selected bone region with a fieldoutput of the mapped HU values. This can be used for visually checking that bonemapy has mapped the HU values correctly.
 
 
-Examples
---------
+Example job files
+-----------------
 
-Example job files can be found in the `examples folder <https://github.com/mhogg/bonemapy/tree/master/examples/shoulder>`_ . Each example should contain an Abaqus job file (.inp), a fortran user subroutine (.f) and a text file containing the HU values (i.e. HUvalues.txt).
+Example job files can be found in the `examples folder <https://github.com/mhogg/bonemapy/tree/master/examples>`_ . Each example should contain an Abaqus job file (.inp), a fortran user subroutine (.f) and a text file containing the HU values (i.e. HUvalues.txt).
 
 To run the shoulder example from the command line, the following command can be used::
 
