@@ -16,7 +16,13 @@ MIT license - See LICENSE.txt for details on usage and redistribution
 Figure 1: FE model of scapula showing meshed part (left) and odb results file showing applied bone properties on several slices through the part (right)
 
 
-    
+.. raw:: html
+
+   <p style="height:22px">
+     <a href="https://travis-ci.org/aio-libs/aiozmq" >
+       <img src="https://travis-ci.org/aio-libs/aiozmq.svg?branch=master"/>
+     </a>
+   </p>
 
 Requirements
 ------------
