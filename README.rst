@@ -27,7 +27,7 @@ Please note that:
 4. ABAQUS still uses Python 2.7 which is not longer supported by the Python community. When installing Python libraries, from PyPi for example, the user must be careful to install only versions of packages that still support Python 2.7
 
 Software requirements
----------------------
+^^^^^^^^^^^^^^^^^^^^^
 
 * ABAQUS >= 2021
 * setuptools == 41.1.0
@@ -35,21 +35,21 @@ Software requirements
 * pydicom == 1.4.2
 
 Model setup requirements
-------------------------
+^^^^^^^^^^^^^^^^^^^^^^^^
 
 * The model must contain only tetrahedral elements. All 3D stress tetrahedral elements are supported (ABAQUS element types C3D4, C3D4H, C3D10, C3D10H, C3D10M, and C3D10MH)
 
 * Requires that the model coordinates match the CT scan coordinates e.g. the bone model cannot be shifted from its original position
 
 CT information
---------------
+^^^^^^^^^^^^^^
 
 * If `Slicer3D <https://www.slicer.org/>`__ has been used to extract the bone geometry, then the geometry should be exported with respect to the RAS coordinate system, not the LPS coordinate system which is the default.  
 
 * All CT slices should be located in the same directory. This directory must not contain any other file types or slices belonging to other stacks
 
 Fortran compiler
-----------------
+^^^^^^^^^^^^^^^^
 
 * The output of bonemapy is a text file that is used by Abaqus Fortran user subroutine USDFLD to apply the bone properties to the part instances during the simulation. A Fortran compiler is required for this. Instructions on how to setup the Intel oneAPI toolkit on Windows, which contains the Intel Fortran compiler, can be found `here <https://info.simuleon.com/blog/free-fortran-compiler-on-windows-for-abaqus-material-modeling-0>`__.
 
