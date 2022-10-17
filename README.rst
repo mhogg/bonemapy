@@ -24,7 +24,7 @@ Please note that:
 Software requirements
 ---------------------
 
-* ABAQUS  >= 2021
+* ABAQUS >= 2021
 * setuptools == 41.1.0
 * pip == 19.2.3
 * pydicom == 1.4.2
@@ -56,33 +56,33 @@ Installation
 a. Install setuptools and pip
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-  To facilitate the installation of 3rd party libraries, the first thing to do is to install `setuptools` and `pip`. Choose the versions that were released around July 2019, which corresponds to the build date of the Python in Abaqus 2021.
+To facilitate the installation of 3rd party libraries, the first thing to do is to install `setuptools` and `pip`. Choose the versions that were released around July 2019, which corresponds to the build date of the Python in Abaqus 2021.
 
-  1. Download `setuptools` and `pip` from `PyPi <http://pypi.org>`__
+1. Download `setuptools` and `pip` from `PyPi <http://pypi.org>`__
 
   The files to download are:
-
-  * setuptools-41.1.0.zip
-  * pip-19.2.3.tar.gz
-
-  2. Unpack these files and browse to the directory where `setup.py` is located, first for setuptools and then for pip::
     
-          # Browse to folder 'setuptools-41.1.0' and install via
-          >>> abaqus python setup.py install
+    + setuptools-41.1.0.zip
+    + pip-19.2.3.tar.gz
 
-          # Browse to folder 'pip-19.2.3' and install via
-          >>> abaqus python setup.py install
+2. Unpack these files and browse to the directory where `setup.py` is located, first for setuptools and then for pip::
 
-  3. Check that `setuptools` and `pip` have been installed into the Abaqus python installation using the command below. If installed, you should be able to see it in the list printed to the screen::
+      # Browse to folder 'setuptools-41.1.0' and install via
+      >>> abaqus python setup.py install
 
-      >>> abaqus python -m pip list
+      # Browse to folder 'pip-19.2.3' and install via
+      >>> abaqus python setup.py install
+
+3. Check that `setuptools` and `pip` have been installed into the Abaqus python installation using the command below. If installed, you should be able to see it in the list printed to the screen::
+
+  >>> abaqus python -m pip list
 
 b. Install pydicom
 ^^^^^^^^^^^^^^^^^^
 
-  Now that pip is installed, you can install pydicom using the command below. Note that version 1.4.2, not the latest (2.3.0 at the time of writing) is installed to be compatible with Python 2.7::
+Now that pip is installed, you can install pydicom using the command below. Note that version 1.4.2, not the latest (2.3.0 at the time of writing) is installed to be compatible with Python 2.7::
 
-    >>> abaqus python -m pip install pydicom==1.4.2
+>>> abaqus python -m pip install pydicom==1.4.2
 
 c. Installation of bonemapy plug-in 
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
