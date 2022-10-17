@@ -11,7 +11,7 @@ Copyright 2022, Michael Hogg (michael.christopher.hogg@gmail.com)
 MIT license - See LICENSE.txt for details on usage and redistribution
 
 
-..  image:: /images/scapula_mesh_bonedensity.png
+..  image:: images/scapula_mesh_bonedensity.png
     :width: 90%
 
     Figure 1: FE model of scapula showing mesh (left) and odb results file showing applied bone properties (right)
