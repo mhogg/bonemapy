@@ -13,7 +13,7 @@ here = path.abspath(path.dirname(__file__))
 
 # Function to open the readme file
 def readme():
-    with open(path.join(here, 'README.md')) as f:
+    with open(path.join(here, 'README.rst')) as f:
         return f.read()
 long_description = readme()
 
@@ -22,13 +22,13 @@ setup(
     version = bonemapy.__version__,
     description = 'An ABAQUS plug-in to map bone properties from CT scans to 3D finite element bone/implant models',
     long_description = long_description,
-    long_description_content_type='text/markdown',
+    long_description_content_type = 'text/x-rst',
     license = 'MIT license',
     keywords = ["ABAQUS", "plug-in","CT","finite","element","bone","properties","python"],
     author = 'Michael Hogg',
     author_email = 'michael.christopher.hogg@gmail.com',
     packages=['', 'bonemapy', 'examples'],
-    package_data = {'': ['README.md','LICENSE.txt'], 'bonemapy': ['icons\*'], 'examples': ['shoulder\*']},
+    package_data = {'': ['README.rst','LICENSE.txt'], 'bonemapy': ['icons\*'], 'examples': ['shoulder\*']},
     include_package_data = True,
     url = "https://github.com/mhogg/bonemapy",
     download_url = "https://github.com/mhogg/bonemapy/releases",
