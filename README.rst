@@ -143,7 +143,7 @@ bonemapy produces the following output:
 Examples
 --------
 
-Example job files can be found in the [examples folder](examples). Each example should contain an Abaqus job file (.inp), a fortran user subroutine (.f) and a text file containing the HU values (i.e. HUvalues.txt).
+Example job files can be found in the 'examples folder <https://github.com/mhogg/bonemapy/tree/master/examples/shoulder>'_ . Each example should contain an Abaqus job file (.inp), a fortran user subroutine (.f) and a text file containing the HU values (i.e. HUvalues.txt).
 
 To run the shoulder example from the command line, the following command can be used::
 
