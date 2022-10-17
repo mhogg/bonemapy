@@ -11,7 +11,7 @@ Copyright 2022, Michael Hogg (michael.christopher.hogg@gmail.com)
 MIT license - See LICENSE.txt for details on usage and redistribution
 
 
-..  image:: images/scapula_mesh_bonedensity.png
+..  image:: https://github.com/mhogg/bonemapy/blob/master/images/scapula_mesh_bonedensity.png
     :width: 90%
     
 
