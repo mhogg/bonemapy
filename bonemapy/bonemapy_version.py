@@ -5,5 +5,5 @@
 # This file is part of bonemapy - See LICENSE.txt for information on usage and redistribution
 
 # Version and date
-version     = '0.5.4'
-releasedate = '2022-09-30'
+version     = '0.6.0'
+releasedate = '2022-10-17'

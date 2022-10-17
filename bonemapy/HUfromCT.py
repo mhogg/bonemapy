@@ -72,21 +72,15 @@ def getModelData(modelName,regionSetName):
         numElems = len(elements)
         ec = dict([(ename,eclass()) for ename,eclass in et.seTypes.items()])
 
-    # Get total number of integration points
-    numIntPts = 0
-    for instName in partInfo.keys():
-        for etype,ecount in partInfo[instName].items():
-            numIntPts += ec[etype].numIntPnts * ecount
-
     # Get node data
     nodeData={}
     for instName in partInfo.keys():
         instNodes = m.rootAssembly.instances[instName].nodes
         numNodes  = len(instNodes)
-        nodeData[instName] = np.zeros(numNodes,dtype=[('label','|i4'),('coord','|f4',(3,))])
+        nodeData[instName] = np.zeros(numNodes,dtype=[('label','|i4'),('coord','|f4',(3,)),('HUval','|f4')])
         for n in xrange(numNodes):
             node = instNodes[n]
-            nodeData[instName][n] = (node.label,node.coordinates)
+            nodeData[instName][n] = (node.label,node.coordinates,0.0)
 
     # Create empty dictionary,array to store element data
     elemData = copy.deepcopy(partInfo)
@@ -95,45 +89,27 @@ def getModelData(modelName,regionSetName):
             elemData[instName][k] = np.zeros(v,dtype=[('label','|i4'),('econn','|i4',(ec[k].numNodes,))])
     eCount = dict([(k1,dict([k2,0] for k2 in partInfo[k1].keys())) for k1 in partInfo.keys()])
 
-    # Create empty array to store int pnt data
-    ipData = np.zeros(numIntPts,dtype=[('iname','|a80'),('label','|i4'),('ipnum','|i4'),('coord','|f4',(3,)),('HUval','|f4')])
-
-    # Calculate integration point coordinates from nodal coordinates using element
-    # interpolation function. Also get element data
-    ilow = 0
+    # Populate element data
     for e in xrange(numElems):
 
         # Get element data
-        elem       = elements[e]
-        eInstName  = elem.instanceName
-        eConn      = elem.connectivity
-        eType      = elem.type
-        eClass     = ec[eType]
-
-        # Get int pnt coords from nodal coords
-        nodeCoords = nodeData[eInstName]['coord'][list(eConn)]
-        ipCoords   = eClass.getIntPointValues(nodeCoords)
-        nip        = eClass.numIntPnts
-
-        # Store int pnt data
-        iupp = ilow + nip
-        ipData['iname'][ilow:iupp] = eInstName
-        ipData['label'][ilow:iupp] = elem.label
-        ipData['ipnum'][ilow:iupp] = eClass.ipnums
-        ipData['coord'][ilow:iupp] = ipCoords
-        ilow = iupp
+        elem      = elements[e]
+        eInstName = elem.instanceName
+        eConn     = elem.connectivity
+        eType     = elem.type
 
         # Store element label and connectivity
         eIndex = eCount[eInstName][eType]
         elemData[eInstName][eType][eIndex] = (elem.label,eConn)
         eCount[eInstName][eType] +=1
 
-    # Get bounding box for int pnt data
-    minx,miny,minz = np.min(ipData['coord'],axis=0)
-    maxx,maxy,maxz = np.max(ipData['coord'],axis=0)
+    # Get bounding box of all instances based on the nodal coordinates
+    nodeDataAll = np.hstack([v for v in nodeData.values()])
+    minx,miny,minz = np.min(nodeDataAll['coord'],axis=0)
+    maxx,maxy,maxz = np.max(nodeDataAll['coord'],axis=0)
     bbox = [[minx,miny,minz],[maxx,maxy,maxz]]
 
-    return nodeData,elemData,ipData,bbox
+    return nodeData,elemData,bbox
 
 # ~~~~~~~~~~
 
@@ -187,6 +163,7 @@ def getHUfromCT(CTsliceDir,resetCTOrigin,bbox):
     y = j + np.dot(iopm, ipp)[1]
 
     # Check that the model data lies within the bounds of the CT stack
+    # NOTE: If using Slicer3D for the segmentation use the RAS coordinate system in the export options
     minx,miny,minz = bbox[0]
     maxx,maxy,maxz = bbox[1]
     if ((minx<x[0] or maxx>x[-1]) or (miny<y[0] or maxy>y[-1]) or (minz<z[0] or maxz>z[-1])):
@@ -228,16 +205,55 @@ def getHUfromCT(CTsliceDir,resetCTOrigin,bbox):
 
 # ~~~~~~~~~~
 
-def mapHUtoMesh(ipData,interp):
+def mapHUtoMesh(nodeData,elemData,interp):
 
     """Interpolates the HU values from the CT stack to the int pnts of the FE model"""
 
-    # For each integration point, get the HU value by trilinear interpolation from
-    # the nearest CT slice voxels
-    numPoints = ipData.size
-    for i in xrange(numPoints):
-        xc,yc,zc = ipData[i]['coord']
-        ipData[i]['HUval'] = interp(xc,yc,zc)
+    # For each node, get the HU value by trilinear interpolation from the nearest CT slice
+    # voxels. Then use the element shape function to interpolate to the elements integration points
+
+    # Get element classes
+    ec = dict([(ename,eclass()) for ename,eclass in et.seTypes.items()])
+
+    # Get total number of integration points
+    numIntPts = 0
+    for instName in elemData.keys():
+        for eType in elemData[instName].keys():
+            eCount = len(elemData[instName][eType])
+            numIntPts += ec[eType].numIntPnts * eCount
+
+    # Create empty array to store int pnt data
+    ipData = np.zeros(numIntPts,dtype=[('iname','|a80'),('label','|i4'),('ipnum','|i4'),('coord','|f4',(3,)),('HUval','|f4')])
+    
+    # Get HU values at all nodes
+    for instName in nodeData.keys():
+        for i,ndata in enumerate(nodeData[instName]):
+            nodeData[instName][i]['HUval'] = interp(*ndata['coord'])
+
+    # Get the HU values at the integration points by interpolation from the nodal values    
+    ilow=0
+    for instName in elemData.keys():
+        for eType in elemData[instName].keys():
+            for edata in elemData[instName][eType]:
+
+                eLabel = edata['label']
+                eConn  = edata['econn']
+                eClass = ec[eType]
+                nip = eClass.numIntPnts
+
+                # For the current element, get the HU values at all the nodes and interpolate
+                # the values to the integration points using the element shape function
+                nodeHUvals = nodeData[instName]['HUval'][list(eConn)]
+                ipHUvals = eClass.getIntPointValues(nodeHUvals)
+                
+                # Store int pnt data
+                iupp = ilow + nip
+                ipData['iname'][ilow:iupp] = instName
+                ipData['label'][ilow:iupp] = eLabel
+                ipData['ipnum'][ilow:iupp] = eClass.ipnums
+                ipData['HUval'][ilow:iupp] = ipHUvals
+                ilow = iupp
+
     return ipData
 
 # ~~~~~~~~~~
@@ -390,7 +406,7 @@ def getHU(modelName, regionSetName, CTsliceDir, outfilename, resetCTOrigin, writ
         print '\nError in getModelData. Exiting'
         return
     else:
-        nodeData,elemData,ipData,bbox = result
+        nodeData,elemData,bbox = result
 
     # Get HU values from the CT stack
     print '\nGetting HU values from CT stack'
@@ -403,7 +419,7 @@ def getHU(modelName, regionSetName, CTsliceDir, outfilename, resetCTOrigin, writ
 
     # Map HU values to the int pnts of the FE model mesh
     print '\nMapping HU values to the int pnts of the FE model mesh'
-    result = mapHUtoMesh(ipData,interp)
+    result = mapHUtoMesh(nodeData,elemData,interp)
     if result is None:
         print '\nError in mapHUtoMesh. Exiting'
         return

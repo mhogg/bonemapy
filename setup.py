@@ -28,7 +28,7 @@ setup(
     author = 'Michael Hogg',
     author_email = 'michael.christopher.hogg@gmail.com',
     packages=['', 'bonemapy'],
-    package_data = {'': ['README.md','LICENSE.txt'], 'bonemapy': ['icons\*']},
+    package_data = {'': ['README.md','LICENSE.txt','examples\*'], 'bonemapy': ['icons\*']},
     include_package_data = True,
     url = "https://github.com/mhogg/bonemapy",
     download_url = "https://github.com/mhogg/bonemapy/releases",
