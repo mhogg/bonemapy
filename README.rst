@@ -10,10 +10,8 @@ Copyright 2022, Michael Hogg (michael.christopher.hogg@gmail.com)
 
 MIT license - See LICENSE.txt for details on usage and redistribution
 
-
 ..  image:: https://github.com/mhogg/bonemapy/blob/master/images/scapula_mesh_bonedensity.png
-    :width: 90%
-    
+    :width: 90%  
 
 Figure 1: FE model of scapula showing meshed part (left) and odb results file showing applied bone properties on several slices through the part (right)
 
@@ -82,7 +80,7 @@ To facilitate the installation of 3rd party libraries, the first thing to do is 
 
 3. Check that `setuptools` and `pip` have been installed into the Abaqus python installation using the command below. If installed, you should be able to see it in the list printed to the screen::
 
-  >>> abaqus python -m pip list
+    >>> abaqus python -m pip list
 
 b. Install pydicom
 ^^^^^^^^^^^^^^^^^^
