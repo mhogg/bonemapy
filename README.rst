@@ -12,7 +12,7 @@ MIT license - See LICENSE.txt for details on usage and redistribution
 
 
 ..  image:: /images/scapula_mesh_bonedensity.png
-    :width: 90
+    :width: 90%
 
 
 ..  raw:: html
