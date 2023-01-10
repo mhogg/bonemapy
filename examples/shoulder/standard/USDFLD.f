@@ -17,10 +17,10 @@
     CHARACTER(len=256) :: mat_props
     CHARACTER(len=80)  :: parts(nparts), partname, partnameUC
 
-    ! Variables
-    ! STATEV(1) = Hounsfield Units (HU)
-    ! STATEV(2) = Bone density (g/cm3)
-    ! FIELD(1)  = Young's modulus (MPa)
+    ! Solution dependent variables (SDVs) and field variables (FIELDs)
+    ! SDV1 = Hounsfield Units (HU)
+    ! SDV2 = Bone density (g/cm3)
+    ! FIELD1 = Elastic modulus (MPa)
 
     ! Set user variables
     parts(1)  = 'scapula'       ! Name of part

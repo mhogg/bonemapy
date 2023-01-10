@@ -28,6 +28,7 @@
     end type t_raggedarray
     type(t_raggedarray), allocatable :: part_elems(:)
 
+    ! Custom type to read HUvalues file
     type t_hudata
         character(len=80):: partname
         integer :: elmnum
@@ -37,7 +38,13 @@
     type(t_hudata) :: hudatai
     type(t_hudata), allocatable :: hudata(:), temp_hudata(:)
 
-    ! Define variables
+    ! Solution dependent variables (SDVs) and field variables (FIELDs)
+    ! SDV1 = Flag used to test if material properties have been applied
+    ! SDV2 = Hounsfield Units (HU)
+    ! SDV3 = Bone density (g/cm3)
+    ! SDV4, FIELD1 = Elastic modulus (MPa)
+
+    ! Set user variables
     mat_props = 'HUvalues.txt'  ! Filename of file containing HU values
     rho_min   = 0.1             ! Minimum apparent bone density (g/cm3)
     rho_max   = 1.7             ! Maximum apparent bone density (g/cm3)
