@@ -2,5 +2,19 @@
 MANIFEST
 dist
 .vscode/
+*.rpy*
+*.abq
+*.com
+*.dat
+*.log
+*.mdl
+*.msg
+*.odb
+*.pac
+*.prt
+*.res
+*.sel
+*.sta
+*.stt
 
 
