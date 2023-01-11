@@ -112,10 +112,10 @@ class Bonemapy_plugin(AFXForm):
 
 # Register the plug-in
 desc  = 'An ABAQUS plugin used to extract bone properties from CT scans for use in finite element analyses of bone.\n\n'
-desc += 'Uses tri-linear interpolation to map the HU values from the CT scans to the integration point coordinates of the '
+desc += 'Uses tri-linear interpolation to map the HU values from the CT scans to the nodes and then to the integration points of the '
 desc += 'mesh elements, as required for simulations that use ABAQUS subroutines such as USDFLD or UMAT to apply the bone properties.\n\n'
-desc += 'Requires that an ABAQUS model be open in the current viewport. Currently only accepts bone models meshed with tetrahedral '
-desc += 'elements (ABAQUS element types C3D4, C3D4H, C3D10, C3D10H, C3D10M and C3D10MH are all supported).\n'
+desc += 'Currently only accepts bone models meshed with tetrahedral elements (ABAQUS element types C3D4, C3D4H, C3D10, '
+desc += 'C3D10H, C3D10M and C3D10MH are all supported).\n'
 
 toolset = getAFXApp().getAFXMainWindow().getPluginToolset()
 toolset.registerGuiMenuButton(

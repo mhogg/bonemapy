@@ -10,6 +10,11 @@ Copyright 2022, Michael Hogg (michael.christopher.hogg@gmail.com)
 
 MIT license - See LICENSE.txt for details on usage and redistribution
 
+..  image:: https://github.com/mhogg/bonemapy/blob/master/images/scapula_mesh_bonedensity.png?raw=true
+    :width: 90%
+    :alt: Image of scapula
+    
+Figure 1: FE model of scapula showing meshed part (left) and odb results file showing applied bone properties on several slices through the part (right)
 
 Requirements
 ------------
@@ -22,29 +27,29 @@ Please note that:
 4. ABAQUS still uses Python 2.7 which is not longer supported by the Python community. When installing Python libraries, from PyPi for example, the user must be careful to install only versions of packages that still support Python 2.7
 
 Software requirements
----------------------
+^^^^^^^^^^^^^^^^^^^^^
 
-* ABAQUS  >= 2021
+* ABAQUS >= 2021
 * setuptools == 41.1.0
 * pip == 19.2.3
 * pydicom == 1.4.2
 
 Model setup requirements
-------------------------
+^^^^^^^^^^^^^^^^^^^^^^^^
 
 * The model must contain only tetrahedral elements. All 3D stress tetrahedral elements are supported (ABAQUS element types C3D4, C3D4H, C3D10, C3D10H, C3D10M, and C3D10MH)
 
 * Requires that the model coordinates match the CT scan coordinates e.g. the bone model cannot be shifted from its original position
 
 CT information
---------------
+^^^^^^^^^^^^^^
 
 * If `Slicer3D <https://www.slicer.org/>`__ has been used to extract the bone geometry, then the geometry should be exported with respect to the RAS coordinate system, not the LPS coordinate system which is the default.  
 
 * All CT slices should be located in the same directory. This directory must not contain any other file types or slices belonging to other stacks
 
 Fortran compiler
-----------------
+^^^^^^^^^^^^^^^^
 
 The output of bonemapy is a text file that is used by Abaqus Fortran user subroutine USDFLD or VUSDFLD to apply the bone properties to the part instances during the simulation. See [here](docs/subroutines.md) for details.
 
@@ -54,33 +59,33 @@ Installation
 a. Install setuptools and pip
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-  To facilitate the installation of 3rd party libraries, the first thing to do is to install `setuptools` and `pip`. Choose the versions that were released around July 2019, which corresponds to the build date of the Python in Abaqus 2021.
+To facilitate the installation of 3rd party libraries, the first thing to do is to install `setuptools` and `pip`. Choose the versions that were released around July 2019, which corresponds to the build date of the Python in Abaqus 2021.
 
-  1. Download `setuptools` and `pip` from `PyPi <http://pypi.org>`__
+1. Download `setuptools` and `pip` from `PyPi <http://pypi.org>`__
 
   The files to download are:
-
-  * setuptools-41.1.0.zip
-  * pip-19.2.3.tar.gz
-
-  2. Unpack these files and browse to the directory where `setup.py` is located, first for setuptools and then for pip::
     
-          # Browse to folder 'setuptools-41.1.0' and install via
-          >>> abaqus python setup.py install
+    + setuptools-41.1.0.zip
+    + pip-19.2.3.tar.gz
 
-          # Browse to folder 'pip-19.2.3' and install via
-          >>> abaqus python setup.py install
+2. Unpack these files and browse to the directory where `setup.py` is located, first for setuptools and then for pip::
 
-  3. Check that `setuptools` and `pip` have been installed into the Abaqus python installation using the command below. If installed, you should be able to see it in the list printed to the screen::
+      # Browse to folder 'setuptools-41.1.0' and install via
+      >>> abaqus python setup.py install
 
-      >>> abaqus python -m pip list
+      # Browse to folder 'pip-19.2.3' and install via
+      >>> abaqus python setup.py install
+
+3. Check that `setuptools` and `pip` have been installed into the Abaqus python installation using the command below. If installed, you should be able to see it in the list printed to the screen::
+
+    >>> abaqus python -m pip list
 
 b. Install pydicom
 ^^^^^^^^^^^^^^^^^^
 
-  Now that pip is installed, you can install pydicom using the command below. Note that version 1.4.2, not the latest (2.3.0 at the time of writing) is installed to be compatible with Python 2.7::
+Now that pip is installed, you can install pydicom using the command below. Note that version 1.4.2, not the latest (2.3.0 at the time of writing) is installed to be compatible with Python 2.7::
 
-    >>> abaqus python -m pip install pydicom==1.4.2
+>>> abaqus python -m pip install pydicom==1.4.2
 
 c. Installation of bonemapy plug-in 
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
@@ -133,11 +138,11 @@ bonemapy produces the following output:
 2. An odb file of the selected bone region with a fieldoutput of the mapped HU values. This can be used for visually checking that bonemapy has mapped the HU values correctly.
 
 
+Applying the bone properties in a simulation
+--------------------------------------------
 
-Examples
---------
+Bone properties from the bonemapy plugin can be applied to a model in an analysis using Abaqus user subroutines. Details and examples are provided `here <https://github.com/mhogg/bonemapy/docs/subroutines.md>`__
 
-Example job files can be found in the [examples folder](examples).
 
 Help
 ----

@@ -1,4 +1,5 @@
 # -*- coding: utf-8 -*-
+from __future__ import print_function
 
 # Copyright (C) 2022 Michael Hogg
 
@@ -16,7 +17,7 @@ try:
     import numpy as np
     import pydicom
 except:
-    print 'Error importing required modules'
+    print('Error importing required modules')
 
 # ~~~~~~~~~~
 
@@ -50,7 +51,7 @@ def getElements(m,regionSetName):
     if len(usTypes)>0:
         if len(usTypes)==1: strvars = ('',usTypes[0],regionSetName,'is')
         else:               strvars = ('s',', '.join(usTypes),regionSetName,'are')
-        print '\nElement type%s %s in region %s %s not supported' % strvars
+        print('\nElement type%s %s in region %s %s not supported' % strvars)
         return None
 
     return partInfo, elements
@@ -130,7 +131,7 @@ def getHUfromCT(CTsliceDir,resetCTOrigin,bbox):
         fileName = fileList[i]
         try: ds = pydicom.read_file(fileName)
         except:
-            print '\nCannot open CT slice file %s. Check that this is a valid dicom file' % fileName
+            print('\nCannot open CT slice file %s. Check that this is a valid dicom file' % fileName)
             return None
         if i==0:
             rows,cols = ds.Rows, ds.Columns
@@ -167,7 +168,7 @@ def getHUfromCT(CTsliceDir,resetCTOrigin,bbox):
     minx,miny,minz = bbox[0]
     maxx,maxy,maxz = bbox[1]
     if ((minx<x[0] or maxx>x[-1]) or (miny<y[0] or maxy>y[-1]) or (minz<z[0] or maxz>z[-1])):
-        print '\nModel outside bounds of CT stack. Model must have been moved from original position'
+        print('\nModel outside bounds of CT stack. Model must have been moved from original position')
         return None
 
     # Load the CT slices into a numpy array. Only load the CT slices that are required
@@ -199,7 +200,7 @@ def getHUfromCT(CTsliceDir,resetCTOrigin,bbox):
     um += 'Number of rows, columns = %d, %d\n' % (rows,cols)
     um += 'Pixel size: %.3f in X, %.3f in Y\n' % (psx,psy)
     um += 'Patient location (x,y) = (%.1f,%.1f)\n' % (ippx,ippy)
-    print um
+    print(um)
 
     return interp
 
@@ -274,7 +275,7 @@ def writeOutput(ipData,outfilename):
         huval    = ip['HUval']
         file1.write('%s %7d %2d %8.1f\n' % (instName,label,ipnum,huval))
     file1.close()
-    print ('HU results written to file: %s' % (outfilename))
+    print('HU results written to file: %s' % (outfilename))
 
     return 0
 
@@ -373,7 +374,7 @@ def writeOdb(nodeData,elemData,ipData,regionSetName,outfilename):
     # Save and close odb
     odb.save()
     odb.close()
-    print ('Odb file created: %s' % (os.path.join(os.getcwd(),odbName)))
+    print('Odb file created: %s' % (os.path.join(os.getcwd(),odbName)))
 
     return 0
 
@@ -397,49 +398,49 @@ def getHU(modelName, regionSetName, CTsliceDir, outfilename, resetCTOrigin, writ
     Also creates an odb file with a fieldoutput showing the mapped HU values for checking.
     """
     # User message
-    print '\nbonemapy plug-in to map HU values from CT stack to integration points of FE model'
+    print('\nbonemapy plug-in to map HU values from CT stack to integration points of FE model')
 
     # Get model data
-    print '\nExtracting model data'
+    print('\nExtracting model data')
     result = getModelData(modelName,regionSetName)
     if result is None:
-        print '\nError in getModelData. Exiting'
+        print('\nError in getModelData. Exiting')
         return
     else:
         nodeData,elemData,bbox = result
 
     # Get HU values from the CT stack
-    print '\nGetting HU values from CT stack'
+    print('\nGetting HU values from CT stack')
     result = getHUfromCT(CTsliceDir,resetCTOrigin,bbox)
     if result is None:
-        print '\nError in getHUfromCT. Exiting'
+        print('\nError in getHUfromCT. Exiting')
         return
     else:
         interp = result
 
     # Map HU values to the int pnts of the FE model mesh
-    print '\nMapping HU values to the int pnts of the FE model mesh'
+    print('\nMapping HU values to the int pnts of the FE model mesh')
     result = mapHUtoMesh(nodeData,elemData,interp)
     if result is None:
-        print '\nError in mapHUtoMesh. Exiting'
+        print('\nError in mapHUtoMesh. Exiting')
         return
     else:
         ipData = result
 
     # Write HU values to text file
-    print '\nWriting text output'
+    print('\nWriting text output')
     result = writeOutput(ipData,outfilename)
     if result is None:
-        print '\nError in writeOutput. Exiting'
+        print('\nError in writeOutput. Exiting')
         return
 
     # Write odb file to check HU values have been calculated correctly
     if writeOdbOutput:
-        print '\nCreating odb file for checking of mapped HU values'
+        print('\nCreating odb file for checking of mapped HU values')
         result = writeOdb(nodeData,elemData,ipData,regionSetName,outfilename)
         if result is None:
-            print '\nError in writeOdbOutput. Exiting'
+            print('\nError in writeOdbOutput. Exiting')
             return
 
-    print '\nFinished\n'
+    print('\nFinished\n')
     return
