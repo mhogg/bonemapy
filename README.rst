@@ -46,9 +46,7 @@ CT information
 Fortran compiler
 ----------------
 
-* The output of bonemapy is a text file that is used by Abaqus Fortran user subroutine USDFLD to apply the bone properties to the part instances during the simulation. A Fortran compiler is required for this. Instructions on how to setup the Intel oneAPI toolkit on Windows, which contains the Intel Fortran compiler, can be found `here <https://info.simuleon.com/blog/free-fortran-compiler-on-windows-for-abaqus-material-modeling-0>`__.
-
-* The example Abaqus user subroutines provided here use the *free* format, not the traditional *fixed* format. This will likely require a small modification to the `compile_fortran` variable in the Abaqus environment file (.env). The fix is to add `'/free',` on the next line after the `'ifort',` entry.
+The output of bonemapy is a text file that is used by Abaqus Fortran user subroutine USDFLD or VUSDFLD to apply the bone properties to the part instances during the simulation. See [here](docs/subroutines.md) for details.
 
 Installation
 ------------
@@ -130,22 +128,16 @@ bonemapy produces the following output:
 
     instanceName elementNumber IntegrationPointNumber HUvalue
 
-  This file is space delimited so it can easily be read by Fortran code such as that used by ABAQUS user subroutines USDFLD / UMAT for applying mechanical properties to models. 
+  This file is space delimited so it can easily be read by Fortran code such as that used by ABAQUS user subroutines USDFLD / VUSDFLD for applying mechanical properties to models. 
 
 2. An odb file of the selected bone region with a fieldoutput of the mapped HU values. This can be used for visually checking that bonemapy has mapped the HU values correctly.
+
 
 
 Examples
 --------
 
-Example job files can be found in the [examples folder](examples). Each example should contain an Abaqus job file (.inp), a fortran user subroutine (.f) and a text file containing the HU values (i.e. HUvalues.txt).
-
-To run the shoulder example from the command line, the following command can be used::
-
-  >>> abaqus job=shoulder user=USDFLD.f cpus=1
-
-Fieldoutputs SDV1, SDV2 and FV1 are created to view the HU values, apparent bone density, and elastic modulus, respectively.
-
+Example job files can be found in the [examples folder](examples).
 
 Help
 ----

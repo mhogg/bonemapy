@@ -10,13 +10,15 @@
               field(nblock,nfieldv)
     character*80 cmname
 
+    ! User variables
     integer, parameter :: chunk_size=1000
-    integer :: indx1(1), indx2(1), ios, n, elmnum, nintp, num_elems, num_parts
+    integer :: indx1(1), indx2(1), ios, jrcd, n, elmnum, nintp, num_elems, num_parts
     integer, save :: do_once=0
+    real, parameter :: sdv1_flag=1.0
     real :: huval, density, emodulus, rho_min, rho_max
     real, save :: HUmin, HUmax
     character(len=80) :: partname
-    character(len=256) :: outdir, mat_props, mat_props_path
+    character(len=256) :: outdir, mat_props
     character(len=80), allocatable, save :: parts(:), temp_parts(:)
 
     ! Define a custom array type that contains multiple arrays of different sizes
@@ -33,14 +35,14 @@
     end type t_raggedarray_r
     type(t_raggedarray_r), allocatable, save :: HU(:)
 
-    ! Custom type to read HUvalues file
+    ! Custom type to read mat_props file
     type t_hudata
         character(len=80):: partname
         integer :: elmnum
         integer :: nintp
         real :: huval
     end type t_hudata
-    type(t_hudata) :: hudatai
+    type(t_hudata) :: hudatan
     type(t_hudata), allocatable :: hudata(:), temp_hudata(:)
 
     ! Solution dependent variables (SDVs) and field variables (FIELDs)
@@ -54,29 +56,30 @@
     rho_min   = 0.1             ! Minimum apparent bone density (g/cm3)
     rho_max   = 1.7             ! Maximum apparent bone density (g/cm3)
 
+    ! Do once only on first call to subrouine
     if (do_once/=1) then
 
         do_once = 1
 
         ! Read the HUvalues.txt file
         ! Reference: https://degenerateconic.com/dynamically-sizing-arrays.html
-        CALL VGETOUTDIR(outdir, lenoutdir)
-        mat_props_path = trim(adjustl(outdir)) // '/' // mat_props
-        open(unit=101, file=mat_props_path, status='OLD', action='READ')
+        call VGETOUTDIR(outdir, lenoutdir)
+        mat_props = trim(adjustl(outdir)) // '/' // mat_props
+        open(unit=101, file=mat_props, status='OLD', action='READ')
 
         n = 0
-        readx: do
+        readfile: do
 
-            read(101,*,iostat=ios) hudatai
+            read(101,*,iostat=ios) hudatan
 
             if (ios/=0) then
-                ! NOTE: temp = hudata(1:n) should work here even without the allocate(temp(n)),
-                ! but crashes during packaging. However, temp(1:n) does not cause a crash
+                ! NOTE: temp_hudata = hudata(1:n) should work here even without the allocate(temp_hudata(n)),
+                ! but crashes during packaging. However, temp_hudata(1:n) does not cause a crash
                 if (allocated(temp_hudata)) deallocate(temp_hudata)
                 allocate(temp_hudata(n))
                 temp_hudata(1:n) = hudata(1:n)
                 call move_alloc(from=temp_hudata, to=hudata)
-                exit readx
+                exit readfile
             end if
 
             if (allocated(hudata)) then
@@ -90,20 +93,20 @@
                 allocate(hudata(chunk_size))
                 n = 1
             end if
-            hudata(n) = hudatai
+            hudata(n) = hudatan
 
-        end do readx
+        end do readfile
         close(101)
 
         ! Get the part names and the number of parts
         allocate(parts(0))
         do i=1,size(hudata)
             partname = upcase(hudata(i)%partname)
-            if (ANY(parts==partname)==.FALSE.) then
+            if (any(parts==partname)==.false.) then
                 allocate(temp_parts(1:size(parts)+1))
-                temp_parts(1:size(parts)) = parts(:)
+                temp_parts(1:size(parts)) = parts
                 temp_parts(size(parts)+1) = partname
-                call move_alloc(temp_parts, parts)
+                call move_alloc(from=temp_parts, to=parts)
             end if
         end do
         num_parts = size(parts)
@@ -167,9 +170,9 @@
     !   on the second call of the subroutine, as the array data will be lost
     do k=1, nblock
 
-        if (stateOld(k,1)/=1.0) then
+        if (stateOld(k,1)/=sdv1_flag) then
             intnum = jElem(k)
-            CALL VGETPARTINFO(intnum, 1, partname, locnum, jrcd)
+            call VGETPARTINFO(intnum, 1, partname, locnum, jrcd)
             if (jrcd==1) write(*,*) 'Error converting from global to local element numbering'
             indx1 = findloc(parts, partname)
             indx2 = findloc(elements(indx1(1))%locnum, locnum)
@@ -181,7 +184,7 @@
             density = stateOld(k,3)
             emodulus = stateOld(k,4)
         end if
-        stateNew(k,1) = 1.0
+        stateNew(k,1) = sdv1_flag
         stateNew(k,2) = huval
         stateNew(k,3) = density
         stateNew(k,4) = emodulus
