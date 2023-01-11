@@ -48,11 +48,6 @@ CT information
 
 * All CT slices should be located in the same directory. This directory must not contain any other file types or slices belonging to other stacks
 
-Fortran compiler
-^^^^^^^^^^^^^^^^
-
-The output of bonemapy is a text file that is used by Abaqus Fortran user subroutine USDFLD or VUSDFLD to apply the bone properties to the part instances during the simulation. See [here](docs/subroutines.md) for details.
-
 Installation
 ------------
 
@@ -141,7 +136,7 @@ bonemapy produces the following output:
 Applying the bone properties in a simulation
 --------------------------------------------
 
-Bone properties from the bonemapy plugin can be applied to a model in an analysis using Abaqus user subroutines. Details and examples are provided `here <https://github.com/mhogg/bonemapy/blob/explicit/docs/subroutines.md>`__.
+Bone properties from the bonemapy plugin can be applied to a model in an analysis using Abaqus Fortran user subroutines. As such, a Fortran compiler is required to apply the bone properties. Details and examples are provided `here <https://github.com/mhogg/bonemapy/blob/explicit/docs/subroutines.md>`__.
 
 
 Help
