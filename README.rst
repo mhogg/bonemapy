@@ -141,7 +141,7 @@ bonemapy produces the following output:
 Applying the bone properties in a simulation
 --------------------------------------------
 
-Bone properties from the bonemapy plugin can be applied to a model in an analysis using Abaqus user subroutines. Details and examples are provided `here <https://github.com/mhogg/bonemapy/docs/subroutines.md>`__
+Bone properties from the bonemapy plugin can be applied to a model in an analysis using Abaqus user subroutines. Details and examples are provided `here <https://github.com/mhogg/bonemapy/blob/explicit/docs/subroutines.md>`__.
 
 
 Help
