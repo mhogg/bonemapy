@@ -58,7 +58,7 @@ Note that an additional SDV, SDV1, is used compared to USDFLD to signify if the 
 
 ## Examples
 
-Example job files for both Abaqus/Standard and Abaqus/Explicit can be found in the [examples folder](examples). The [examples/shoulder/standard](examples/shoulder/standard) is the Abaqus/Standard version, and [examples/shoulder/explicit](examples/shoulder/explicit) is the Abaqus/Explicit version.
+Example job files for both Abaqus/Standard and Abaqus/Explicit can be found in the [examples folder](../examples). The [examples/shoulder/standard](../examples/shoulder/standard) is the Abaqus/Standard version, and [examples/shoulder/explicit](../examples/shoulder/explicit) is the Abaqus/Explicit version.
 
 Each example folder should contain an Abaqus job file (.inp), a fortran user subroutine (.f) and a text file containing the HU values (i.e. HUvalues.txt).
 
