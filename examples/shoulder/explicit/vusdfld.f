@@ -11,22 +11,27 @@
     character*80 cmname
 
     integer, parameter :: chunk_size=1000
-    integer :: indx(1), indx1(1), indx2(1), ios, n, elmnum, nintp, num_elems, num_parts
+    integer :: indx1(1), indx2(1), ios, n, elmnum, nintp, num_elems, num_parts
     integer, save :: do_once=0
-    integer, allocatable, save :: elems_intnum(:)
     real :: huval, density, emodulus, rho_min, rho_max
     real, save :: HUmin, HUmax
-    real, allocatable, save :: HU(:,:)
     character(len=80) :: partname
     character(len=256) :: outdir, mat_props, mat_props_path
-    character(len=80), allocatable :: partnames(:), temp_partnames(:)
+    character(len=80), allocatable, save :: parts(:), temp_parts(:)
 
     ! Define a custom array type that contains multiple arrays of different sizes
     ! Reference: https://stackoverflow.com/questions/18316592/multidimensional-array-with-different-lengths
-    type t_raggedarray
-        integer, allocatable :: locnum(:), intnum(:)
-    end type t_raggedarray
-    type(t_raggedarray), allocatable :: part_elems(:)
+    ! Custom type for local element numbers per part
+    type t_raggedarray_i
+        integer, allocatable :: locnum(:)
+    end type t_raggedarray_i
+    type(t_raggedarray_i), allocatable, save :: elements(:)
+
+    ! Custom type for HU values for each part
+    type t_raggedarray_r
+        real, allocatable :: vals(:,:)
+    end type t_raggedarray_r
+    type(t_raggedarray_r), allocatable, save :: HU(:)
 
     ! Custom type to read HUvalues file
     type t_hudata
@@ -90,89 +95,63 @@
         end do readx
         close(101)
 
-        ! Get number of parts
-        allocate(partnames(0))
+        ! Get the part names and the number of parts
+        allocate(parts(0))
         do i=1,size(hudata)
             partname = upcase(hudata(i)%partname)
-            if (ANY(partnames==partname)==.FALSE.) then
-                allocate(temp_partnames(1:size(partnames)+1))
-                temp_partnames(1:size(partnames)) = partnames(:)
-                temp_partnames(size(partnames)+1) = partname
-                call move_alloc(temp_partnames, partnames)
+            if (ANY(parts==partname)==.FALSE.) then
+                allocate(temp_parts(1:size(parts)+1))
+                temp_parts(1:size(parts)) = parts(:)
+                temp_parts(size(parts)+1) = partname
+                call move_alloc(temp_parts, parts)
             end if
         end do
-        num_parts = size(partnames)
+        num_parts = size(parts)
 
         write(*,*) 'Number of parts = ', num_parts
 
-        ! Get element indices for each part
-        allocate(part_elems(num_parts))
+        ! Populate elements and HU arrays for the current part
+        ! Note: We are assuming 4 integration points per element, which only works for the
+        !       C3D10 quadratic tet element family
+        allocate(elements(num_parts), HU(num_parts))
         do i=1,num_parts
 
             ! First get the number of elements per part to size the array
             num_elems = 0
             do j=1,size(hudata)
                 partname = upcase(hudata(j)%partname)
-                if (partname==partnames(i) .and. hudata(j)%nintp==1) num_elems = num_elems + 1
+                if (partname==parts(i) .and. hudata(j)%nintp==1) num_elems = num_elems + 1
             end do
-            allocate(part_elems(i)%locnum(num_elems), part_elems(i)%intnum(num_elems))
+            allocate(elements(i)%locnum(num_elems), HU(i)%vals(num_elems,4))
 
-            write(*,*) 'Number of elements for part ', trim(partname), ' = ', num_elems
+            write(*,*) 'Number of elements for part ', trim(parts(i)), ' = ', num_elems
 
-            ! Add the element indices data to the array
             n = 0
             do j=1,size(hudata)
+
                 partname = upcase(hudata(j)%partname)
-                if (partname==partnames(i) .and. hudata(j)%nintp==1) then
-                    n = n + 1
-                    locnum = hudata(j)%elmnum
-                    call VGETINTERNAL(partname, locnum, 1, intnum, jrcd)
-                    if (jrcd==1) write(*,*) 'Error converting from local to global element numbering'
-                    part_elems(i)%intnum(n) = intnum
-                    part_elems(i)%locnum(n) = locnum
+                elmnum   = hudata(j)%elmnum
+                nintp    = hudata(j)%nintp
+                huval    = hudata(j)%huval
+
+                if (partname==parts(i)) then
+                    if (nintp==1) n = n + 1
+                    elements(i)%locnum(n) = elmnum
+                    HU(i)%vals(n,nintp) = huval
                 end if
+
             end do
 
         end do
 
-        ! Get number of elements for all parts and put all global element indices within a single array
-        ! Note: We are assuming 4 integration points per element, which only works for a quadratic tet element C3D10 and similar
-        num_elems = 0
-        do i=1,num_parts
-            num_elems = num_elems + size(part_elems(i)%locnum)
-        end do
-        allocate(elems_intnum(num_elems))
-        allocate(HU(num_elems,4))
-
-        n = 0
-        do i=1,num_parts
-            do j=1,size(part_elems(i)%intnum)
-                n = n + 1
-                elems_intnum(n) = part_elems(i)%intnum(j)
-            end do
-        end do
-
-        ! Set the HU values
+        ! Get the HU range (HUmin, HUmax)
         HUmin = hudata(1)%huval
         HUmax = hudata(1)%huval
-        do i=1,size(hudata)
-
-            partname = upcase(hudata(i)%partname)
-            locnum = hudata(i)%elmnum
-            nintp = hudata(i)%nintp
+        do i=2,size(hudata)
             huval = hudata(i)%huval
-
             if (huval<HUmin) HUmin=huval
             if (huval>HUmax) HUmax=huval
-
-            indx = findloc(partnames, partname)
-            indx1 = findloc(part_elems(indx(1))%locnum, locnum)
-            intnum = part_elems(indx(1))%intnum(indx1(1))
-            indx2 = findloc(elems_intnum, intnum)
-            HU(indx2(1),nintp) = huval
-
         end do
-
         write(*,*) 'HUmin = ', HUmin
         write(*,*) 'HUmax = ', HUmax
 
@@ -184,12 +163,17 @@
     ! - jElem is an array of element numbers for the block, so jElem(k) is the (global, or internal) element number
     ! - stateOld will typically be initialised to 0.0, so this can be used as a flag to determine if material properties
     !   have already been set for that material point
+    ! - Ensure that all allocatable arrays used within this section are using the save parameter. Otherwise, will get an error
+    !   on the second call of the subroutine, as the array data will be lost
     do k=1, nblock
 
         if (stateOld(k,1)/=1.0) then
             intnum = jElem(k)
-            indx = findloc(elems_intnum, intnum)
-            huval = HU(indx(1),kIntPt)
+            CALL VGETPARTINFO(intnum, 1, partname, locnum, jrcd)
+            if (jrcd==1) write(*,*) 'Error converting from global to local element numbering'
+            indx1 = findloc(parts, partname)
+            indx2 = findloc(elements(indx1(1))%locnum, locnum)
+            huval = HU(indx1(1))%vals(indx2(1),kIntPt)
             density = HUtoAppDensity(huval,HUmin,HUmax,rho_min,rho_max)
             emodulus = EfromAppDensity(density,2)
         else
