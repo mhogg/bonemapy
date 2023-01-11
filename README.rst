@@ -136,7 +136,7 @@ bonemapy produces the following output:
 Applying the bone properties in a simulation
 --------------------------------------------
 
-Bone properties from the bonemapy plugin can be applied to a model in an analysis using Abaqus Fortran user subroutines. As such, a Fortran compiler is required to apply the bone properties. Details and examples are provided `here <https://github.com/mhogg/bonemapy/blob/explicit/docs/subroutines.md>`__.
+Bone properties from the bonemapy plugin can be applied to a model in an analysis using Abaqus Fortran user subroutines. As such, a Fortran compiler is required to apply the bone properties. Details and examples are provided `here <https://github.com/mhogg/bonemapy/blob/explicit/docs/subroutines.md>`__. Note that subroutines are provided for both Abaqus/Standard and Abaqus/Explicit.
 
 
 Help
