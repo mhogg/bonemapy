@@ -4,7 +4,7 @@ Abaqus user subroutines USDFLD and VUSDFLD are provided to apply the bone proper
 
 ## Requirements
 
-* A material with a User Defined Material must be used for the part for which the bone properties will be applied. For example, the material BONE has been defined as shown in the image below. This includes a number of solution dependent variables (DEPVARs) which will be used to create field outputs for visualisation of these fields.
+* A material with a User Defined Material must be used for the part for which the bone properties will be applied. For example, the material BONE has been defined as shown in the image below. This includes a number of Solution Dependent Variables (SDVs, or DEPVARs) which will be used to create field outputs for visualisation of these fields (see left image) and a single Field Variable (see middle image).
 
   Note that FV and SDV should be added to the Field Output Requests, otherwise these dependent variables will not be written to the .odb file.
 
