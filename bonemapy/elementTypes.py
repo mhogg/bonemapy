@@ -5,7 +5,7 @@
 # This file is part of bonemapy - See LICENSE.txt for information on usage and redistribution
 
 import numpy as np
-from abaqusConstants import C3D4, C3D4H, C3D10, C3D10H, C3D10M, C3D10MH
+from abaqusConstants import C3D4, C3D4H, C3D10, C3D10H, C3D10M, C3D10MH, C3D10HS
 
 # ~~~~~~~~~~ 
 
@@ -161,6 +161,31 @@ class elementC3D10MH(elementC3D10M):
         self.name = 'C3D10MH' 
         self.desc = 'Quadratic tetrahedral element with modified hybrid formulation'                                 
 
+# ~~~~~~~~~~     
+
+class elementC3D10HS(elementC3D10):
+    
+    def __init__(self):
+        elementC3D10.__init__(self)
+        self.name = 'C3D10HS' 
+        self.desc = 'Quadratic tetrahedral element for improved surface stress visualization'     
+
+    def setNumIntPnts(self):
+        self.numIntPnts = 11
+
+    def setIpcs(self):
+        self.ipcs = np.array([[ 0.00, 0.00, 0.00],
+                              [ 1.00, 0.00, 0.00],
+                              [ 0.00, 1.00, 0.00],
+                              [ 0.00, 0.00, 1.00],
+                              [ 0.50, 0.00, 0.00],
+                              [ 0.50, 0.50, 0.00],
+                              [ 0.00, 0.50, 0.00],
+                              [ 0.00, 0.00, 0.50],
+                              [ 0.50, 0.00, 0.50],
+                              [ 0.00, 0.50, 0.50],
+                              [ 0.25, 0.25, 0.25]])
+
 # ~~~~~~~~~~         
 
 # Supported element types
@@ -171,3 +196,4 @@ seTypes[C3D10]   = elementC3D10
 seTypes[C3D10H]  = elementC3D10H
 seTypes[C3D10M]  = elementC3D10M
 seTypes[C3D10MH] = elementC3D10MH
+seTypes[C3D10HS] = elementC3D10HS
