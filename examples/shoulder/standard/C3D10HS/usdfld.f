@@ -11,7 +11,7 @@
 
     ! User variables
     integer, parameter :: chunk_size=1000
-    integer :: indx1(1), indx2(1), ios, jrcd, n, elmnum, nintp, num_elems, num_parts
+    integer :: indx1(1), indx2(1), ios, jrcd, n, elmnum, nintp, num_elems, num_parts, num_intpts
     integer, save :: do_once=0
     real :: huval, density, emodulus, rho_min, rho_max
     real, save :: HUmin, HUmax
@@ -111,8 +111,9 @@
         write(*,*) 'Number of parts = ', num_parts
 
         ! Populate elements and HU arrays for the current part
-        ! Note: We are assuming 4 integration points per element, which only works for the
-        !       C3D10 quadratic tet element family
+        ! Note: We are assuming 11 integration points per element, which only works for the
+        !       C3D10HS quadratic tet element
+        num_intpts = 11
         allocate(elements(num_parts), HU(num_parts))
         do i=1,num_parts
 
@@ -122,7 +123,7 @@
                 partname = upcase(hudata(j)%partname)
                 if (partname==parts(i) .and. hudata(j)%nintp==1) num_elems = num_elems + 1
             end do
-            allocate(elements(i)%locnum(num_elems), HU(i)%vals(num_elems,4))
+            allocate(elements(i)%locnum(num_elems), HU(i)%vals(num_elems,num_intpts))
 
             write(*,*) 'Number of elements for part ', trim(parts(i)), ' = ', num_elems
 
