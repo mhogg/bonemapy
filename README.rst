@@ -37,7 +37,7 @@ Software requirements
 Model setup requirements
 ^^^^^^^^^^^^^^^^^^^^^^^^
 
-* The model must contain only tetrahedral elements. All 3D stress tetrahedral elements are supported (ABAQUS element types C3D4, C3D4H, C3D10, C3D10H, C3D10M, and C3D10MH)
+* The model must contain only tetrahedral elements. All 3D stress tetrahedral elements are supported (ABAQUS element types C3D4, C3D4H, C3D10, C3D10H, C3D10M, C3D10MH and C3D10HS)
 
 * Requires that the model coordinates match the CT scan coordinates e.g. the bone model cannot be shifted from its original position
 
