@@ -11,9 +11,9 @@
 
     ! User variables
     INTEGER, PARAMETER :: minel=1, maxel=123418, nparts=1
-    INTEGER :: elmnum, nintp, ios, do_once=0, flag=0, num_intpnts=11
+    INTEGER :: elmnum, nintp, ios, do_once=0, flag=0, num_intpts=11
     REAL :: huval, rho_min, rho_max
-    REAL, SAVE :: HU(nparts,minel:maxel,num_intpnts), HUmin, HUmax
+    REAL, SAVE :: HU(nparts,minel:maxel,num_intpts), HUmin, HUmax
     CHARACTER(len=256) :: mat_props
     CHARACTER(len=80)  :: parts(nparts), partname, partnameUC
 
