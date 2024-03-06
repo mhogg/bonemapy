@@ -11,9 +11,9 @@
 
     ! User variables
     INTEGER, PARAMETER :: minel=1, maxel=123418, nparts=1
-    INTEGER :: elmnum, nintp, ios, do_once=0, flag=0
+    INTEGER :: elmnum, nintp, ios, do_once=0, flag=0, num_intpnts=11
     REAL :: huval, rho_min, rho_max
-    REAL, SAVE :: HU(nparts,minel:maxel,11), HUmin, HUmax
+    REAL, SAVE :: HU(nparts,minel:maxel,num_intpnts), HUmin, HUmax
     CHARACTER(len=256) :: mat_props
     CHARACTER(len=80)  :: parts(nparts), partname, partnameUC
 
@@ -35,7 +35,7 @@
     if (do_once/=1) then
 
         CALL GETOUTDIR(OUTDIR, LENOUTDIR)
-        mat_props = trim(adjustl(OUTDIR)) // '\' // mat_props
+        mat_props = trim(adjustl(OUTDIR)) // '/' // mat_props
 
         open(unit=101, file=mat_props, status='OLD')
 
@@ -54,7 +54,7 @@
             if (huval>HUmax) HUmax=huval
 
             do i=1,nparts
-                if (partname==parts(i)) HU(i,elmnum,nintp)=huval
+                if (upcase(partname)==upcase(parts(i))) HU(i,elmnum,nintp)=huval
             end do
 
         end do readfile
